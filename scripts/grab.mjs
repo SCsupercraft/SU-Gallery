@@ -119,39 +119,39 @@ try {
 	galleries = [
 		...(await getLocalGallery("SCsupercraft's extension gallery")),
 		...(await getTurbowarpGalleries([
-			// {
-			// 	name: 'TurboWarp extension gallery',
-			// 	priority: 3,
-			// 	icon: 'https://github.com/TurboWarp/extensions/raw/refs/heads/master/website/turbowarp.svg',
-			// 	smallIcon: true,
-			// 	location:
-			// 		'https://raw.githubusercontent.com/TurboWarp/extensions/refs/heads/master/',
-			// 	viewLocation: 'https://extensions.turbowarp.org/',
-			// },
-			// {
-			// 	name: 'GoofyWarp extension gallery',
-			// 	priority: 0,
-			// 	icon: 'https://raw.githubusercontent.com/goofywarp/extensions/refs/heads/master/website/turbowarp.svg',
-			// 	smallIcon: true,
-			// 	location:
-			// 		'https://raw.githubusercontent.com/goofywarp/extensions/refs/heads/master/',
-			// 	viewLocation: 'https://goofywarp.github.io/extensions/',
-			// 	replacements: [
-			// 		{ type: 'removal', replacement: 'TheShovel/ColourPicker' },
-			// 		{ type: 'addition', replacement: 'TheShovel/ColorPicker' },
-			// 	],
-			// },
+			{
+				name: 'TurboWarp extension gallery',
+				priority: 3,
+				icon: 'https://github.com/TurboWarp/extensions/raw/refs/heads/master/website/turbowarp.svg',
+				smallIcon: true,
+				location:
+					'https://raw.githubusercontent.com/TurboWarp/extensions/refs/heads/master/',
+				viewLocation: 'https://extensions.turbowarp.org/',
+			},
+			{
+				name: 'GoofyWarp extension gallery',
+				priority: 0,
+				icon: 'https://raw.githubusercontent.com/goofywarp/extensions/refs/heads/master/website/turbowarp.svg',
+				smallIcon: true,
+				location:
+					'https://raw.githubusercontent.com/goofywarp/extensions/refs/heads/master/',
+				viewLocation: 'https://goofywarp.github.io/extensions/',
+				replacements: [
+					{ type: 'removal', replacement: 'TheShovel/ColourPicker' },
+					{ type: 'addition', replacement: 'TheShovel/ColorPicker' },
+				],
+			},
 		])),
 		...(await getPenguinModGalleries([
-			// {
-			// 	name: 'PenguinMod extension gallery',
-			// 	priority: 2,
-			// 	icon: 'https://raw.githubusercontent.com/PenguinMod/PenguinMod-ExtensionsGallery/refs/heads/main/static/navicon.png',
-			// 	smallIcon: true,
-			// 	location:
-			// 		'https://raw.githubusercontent.com/PenguinMod/PenguinMod-ExtensionsGallery/refs/heads/main/',
-			// 	viewLocation: 'https://extensions.penguinmod.com/',
-			// },
+			{
+				name: 'PenguinMod extension gallery',
+				priority: 2,
+				icon: 'https://raw.githubusercontent.com/PenguinMod/PenguinMod-ExtensionsGallery/refs/heads/main/static/navicon.png',
+				smallIcon: true,
+				location:
+					'https://raw.githubusercontent.com/PenguinMod/PenguinMod-ExtensionsGallery/refs/heads/main/',
+				viewLocation: 'https://extensions.penguinmod.com/',
+			},
 			{
 				name: 'ElectraMod extension gallery',
 				priority: 1,

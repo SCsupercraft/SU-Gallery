@@ -6,5 +6,6 @@ Environment.configDotenv();
 
 const config: Config = {};
 config.ssr = process.env.dev == 'true' ? true : false;
+config.basename = '/SU-Gallery/';
 
 export default config;
