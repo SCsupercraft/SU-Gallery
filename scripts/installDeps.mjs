@@ -17,7 +17,7 @@ async function spawnProcess(command) {
 }
 
 const lock = path.resolve(process.cwd(), 'package-lock.json');
-if (await BuildHelper.exists(lock)) await fs.rm(path);
+if (await BuildHelper.exists(lock)) await fs.rm(lock);
 
 await spawnProcess('npm i --force');
 await spawnProcess('npm audit fix --legacy-peer-deps');
