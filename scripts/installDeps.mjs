@@ -1,4 +1,7 @@
 import { spawn } from 'node:child_process';
+import path from 'node:path';
+import { BuildHelper } from './helper.mjs';
+import fs from 'node:fs/promises';
 
 async function spawnProcess(command) {
 	return new Promise((resolve) => {
@@ -12,6 +15,9 @@ async function spawnProcess(command) {
 		newProcess.once('exit', resolve);
 	});
 }
+
+const lock = path.resolve(process.cwd(), 'package-lock.json');
+if (await BuildHelper.exists(lock)) await fs.rm(path);
 
 await spawnProcess('npm i --force');
 await spawnProcess('npm audit fix --legacy-peer-deps');
