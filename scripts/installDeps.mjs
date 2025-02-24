@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 
-async function spawn(command) {
+async function spawnProcess(command) {
 	return new Promise((resolve) => {
 		const process = spawn(command, [], {
 			shell: true,
@@ -13,5 +13,5 @@ async function spawn(command) {
 	});
 }
 
-await spawn('npm i --force');
-await spawn('npm audit fix --legacy-peer-deps');
+await spawnProcess('npm i --force');
+await spawnProcess('npm audit fix --legacy-peer-deps');
