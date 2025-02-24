@@ -62,7 +62,7 @@ export class BuildHelper {
 				recursive: true,
 			});
 		} else {
-			await fs.mkdir(prebuildDirectory);
+			await fs.mkdir(this.prebuildDirectory);
 		}
 	}
 

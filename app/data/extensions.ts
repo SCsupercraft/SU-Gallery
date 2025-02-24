@@ -2,7 +2,7 @@ import type {
 	Extension,
 	ExtensionAuthor,
 	ExtensionGallery,
-} from '~/gallery/extensions/extension';
+} from './types/extension';
 
 export class ExtensionManager {
 	private galleries: ExtensionGallery[] = [];

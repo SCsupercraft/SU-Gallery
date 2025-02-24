@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { type Extension, type ExtensionAuthor } from '../extension';
+import { type Extension, type ExtensionAuthor } from '~/data/types/extension';
 import { ExtensionCard } from './ExtensionCard';
 import { TriangleAlert } from 'lucide-react';
 
