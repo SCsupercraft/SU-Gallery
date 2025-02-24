@@ -10,6 +10,7 @@
 		"start": "react-router-serve ./build/server/index.js",
 		"preview": "npm run build && npm run start",
 		"grab:preview": "npm run grab && npm run build && npm run start",
+		"installDeps": "node scripts/installDeps.mjs",
 		"typecheck": "react-router typegen && tsc"
 	},
 	"dependencies": {

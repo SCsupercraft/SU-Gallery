@@ -24,10 +24,8 @@ jobs:
               uses: actions/setup-node@v3
               with:
                   node-version: 20.x
-            - name: Install dependencies
-              run: npm i --force
-            - name: Audit fix
-              run: npm audit fix --legacy-peer-deps
+            - name: Install dependencies and audit
+              run: npm run installDeps
             - name: Build site
               run: npm run grab:build
             - name: Upload artifact
