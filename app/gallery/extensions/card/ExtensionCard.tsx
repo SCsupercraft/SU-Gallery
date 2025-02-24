@@ -5,7 +5,8 @@ import {
 	type ExtensionCredits as ExtensionCreditsType,
 	type ExtensionAuthor as ExtensionAuthorType,
 	type ExtensionBadge,
-} from '../extension';
+} from '~/data/types/extension';
+import { config } from '~/data/config';
 import { TriangleAlert } from 'lucide-react';
 
 import {
@@ -14,9 +15,8 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { Badge } from '~/ui/components/ui/badge';
-import { Button } from '~/ui/components/ui/button';
-import { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 export function ExtensionGrid({
 	extensionManager,
@@ -118,8 +118,8 @@ function ExtensionBanner({
 			<img
 				src={
 					banner == undefined || Gallery == undefined
-						? '/gallery/extensions/banner/unknown.svg'
-						: `/gallery/extensions/banner/${Gallery.id}/${id}.${banner}`
+						? `${config.basename}gallery/extensions/banner/unknown.svg`
+						: `${config.basename}gallery/extensions/banner/${Gallery.id}/${id}.${banner}`
 				}
 				className="w-full h-full object-cover opacity-100"
 			></img>
@@ -141,8 +141,8 @@ function ExtensionGallery({
 		<img
 			src={
 				Gallery == undefined || Gallery.icon == undefined
-					? '/gallery/galleries/unknown.svg'
-					: `/gallery/galleries/${Gallery.id}.${Gallery.icon}`
+					? `${config.basename}gallery/galleries/unknown.svg`
+					: `${config.basename}gallery/galleries/${Gallery.id}.${Gallery.icon}`
 			}
 			className="w-full aspect-[1/1] block"
 		></img>
@@ -193,7 +193,7 @@ function ExtensionPopup({
 
 		const clipboard = navigator.clipboard;
 		await clipboard.writeText(
-			`${window.location.origin}/gallery/extensions/code/${Gallery?.id}/${id}.js`
+			`${window.location.origin}${config.basename}gallery/extensions/code/${Gallery?.id}/${id}.js`
 		);
 	};
 	const copyCode = async () => {
@@ -201,7 +201,9 @@ function ExtensionPopup({
 		if (!Gallery) return;
 
 		const code = await (
-			await fetch(`/gallery/extensions/code/${Gallery.id}/${id}.js`)
+			await fetch(
+				`${config.basename}gallery/extensions/code/${Gallery.id}/${id}.js`
+			)
 		).text();
 
 		const clipboard = navigator.clipboard;
@@ -212,7 +214,9 @@ function ExtensionPopup({
 		if (!Gallery) return;
 
 		const code = await (
-			await fetch(`/gallery/extensions/code/${Gallery.id}/${id}.js`)
+			await fetch(
+				`${config.basename}gallery/extensions/code/${Gallery.id}/${id}.js`
+			)
 		).text();
 
 		const split = id.split('/');
@@ -380,6 +384,8 @@ function ExtensionAuthor({ author }: { author: ExtensionAuthorType }) {
 				<a
 					className="text-blue-400"
 					href={author.link}
+					target="_blank"
+					rel="noreferrer noopener nofollow"
 				>
 					{author.name}
 				</a>

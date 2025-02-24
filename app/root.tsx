@@ -62,7 +62,19 @@ export default function App() {
 				</div>
 			</main>
 			<footer className="absolute bottom-0 flex flex-col items-center gap-9 h-[60px] w-full dark:bg-gray-900 bg-gray-500 justify-center">
-				Copyright &#169; {new Date().getFullYear()} SCsupercraft.
+				<p>
+					Copyright &#169; {new Date().getFullYear()} SCsupercraft.
+					Licensed under the{' '}
+					<a
+						className="text-blue-400"
+						href="https://github.com/SCsupercraft/SU-Gallery/blob/main/LICENSE"
+						target="_blank"
+						rel="noreferrer noopener nofollow"
+					>
+						MIT
+					</a>{' '}
+					license.
+				</p>
 			</footer>
 		</div>
 	);

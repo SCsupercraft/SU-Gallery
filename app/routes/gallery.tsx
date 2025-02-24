@@ -1,6 +1,7 @@
 import type { Route } from './+types/gallery';
-import { Gallery as GalleryPage } from '../gallery/gallery';
+import { Gallery as GalleryPage } from '~/gallery/gallery';
 import { ExtensionManager } from '~/data/extensions';
+import { config } from '~/data/config';
 import { Suspense } from 'react';
 
 export function meta({}: Route.MetaArgs): Route.MetaDescriptors {
@@ -15,7 +16,9 @@ export function meta({}: Route.MetaArgs): Route.MetaDescriptors {
 
 export async function clientLoader({ params }: Route.ClientLoaderArgs) {
 	try {
-		const response = await fetch('/gallery/extensions/galleries.json');
+		const response = await fetch(
+			`${config.basename}gallery/extensions/galleries.json`
+		);
 		if (!response.ok) {
 			return new ExtensionManager([]);
 		}
