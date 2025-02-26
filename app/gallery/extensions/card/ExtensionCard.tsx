@@ -73,7 +73,7 @@ export function ExtensionCard({
 	extensionManager: ExtensionManager;
 }) {
 	return (
-		<div className="extension border-3 border-gray-800 rounded-3xl overflow-hidden relative">
+		<div className="extension border-3 dark:border-gray-800 border-gray-300 rounded-3xl shadow-xl dark:shadow-gray-900 shadow-gray-200 overflow-hidden relative">
 			<ExtensionBanner
 				id={extension.id}
 				banner={extension.banner}
@@ -153,7 +153,7 @@ function ExtensionGallery({
 			<div
 				className={`w-[15%] aspect-[1/1] flex ${
 					Gallery.smallIcon ? 'px-1' : ''
-				} rounded-full overflow-clip pointer-events-auto dark:bg-gray-900 bg-gray-500 border border-gray-200 dark:border-gray-700`}
+				} rounded-full overflow-clip pointer-events-auto bg-gray-900 border border-gray-700`}
 			>
 				<TooltipProvider>
 					<Tooltip>

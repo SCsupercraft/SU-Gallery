@@ -53,7 +53,7 @@ export default function App() {
 				style={{ paddingBottom: 'calc(var(--spacing) * 4 + 60px)' }}
 			>
 				<div className="flex-1 flex flex-col items-center gap-10 h-full">
-					<header className="flex flex-col items-center gap-9 h-[60px] w-full dark:bg-gray-900 bg-gray-500 shadow-black drop-shadow-xl justify-center">
+					<header className="flex flex-col items-center gap-9 h-[60px] w-full dark:bg-gray-900 bg-gray-100 dark:shadow-black shadow-gray-300 drop-shadow-xl justify-center">
 						<Label className="text-2xl">
 							Scratch Ultimate Extension Gallery
 						</Label>
@@ -61,7 +61,7 @@ export default function App() {
 					<Outlet />
 				</div>
 			</main>
-			<footer className="absolute bottom-0 flex flex-col items-center gap-9 h-[60px] w-full dark:bg-gray-900 bg-gray-500 justify-center">
+			<footer className="absolute bottom-0 flex flex-col items-center gap-9 h-[60px] w-full dark:bg-gray-900 bg-gray-100 justify-center">
 				<p>
 					Copyright &#169; {new Date().getFullYear()} SCsupercraft.
 					Licensed under the{' '}
