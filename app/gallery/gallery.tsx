@@ -30,7 +30,9 @@ export function Gallery({
 					featured={true}
 					showDupes={false}
 				/>
-				<p className="text-2xl leading-6 text-center">All Extensions</p>
+				<p className="pt-2 text-2xl leading-6 text-center">
+					All Extensions
+				</p>
 				<SearchableExtensionGrid
 					extensionManager={extensionManager}
 					className="dynamic-grid gap-x-12 gap-y-12"
