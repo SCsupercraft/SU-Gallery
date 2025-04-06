@@ -1,15 +1,21 @@
 import type {
 	Extension,
-	ExtensionAuthor,
 	ExtensionGallery,
+	ExtensionJson,
 } from './types/extension';
 
 export class ExtensionManager {
 	private galleries: ExtensionGallery[] = [];
 	private extensions: Extension[] = [];
 	private authors: string[] = [];
+	public readonly lastUpdated: number;
 
-	constructor(data: ExtensionGallery[]) {
+	constructor(json: ExtensionJson) {
+		const lastUpdated = json.lastUpdated;
+		const data = json.data;
+
+		this.lastUpdated = lastUpdated;
+
 		try {
 			const knownExtensions: Set<string> = new Set();
 			data.forEach((gallery) => {

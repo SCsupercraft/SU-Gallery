@@ -47,6 +47,12 @@
  * @property {boolean} [featured] Is this extension featured on our gallery?
  */
 
+/**
+ * @typedef {Object} ExtensionJson
+ * @property {number} lastUpdated
+ * @property {ExtensionGallery[]} data
+ */
+
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
@@ -700,9 +706,9 @@ export class ExtensionGalleryData {
 			'gallery/extensions/galleries.json'
 		);
 		return new Promise(async (resolve, reject) => {
-			/** @type {ExtensionGalleryMetaData[]} */
+			/** @type {ExtensionJson} */
 			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			json.push({
+			json.data.push({
 				id: this.id,
 				name: this.name,
 				icon: this.icon,

@@ -11,13 +11,23 @@ export function Gallery({
 	return (
 		<div className="w-full space-y-6 px-4 pl-8 pr-8">
 			<div className="flex rounded-3xl p-4 border border-gray-200 dark:border-gray-700 justify-center">
-				<p className="text-sm">
+				<p className="text-sm text-center">
 					<TriangleAlert
-						className="me-3 -mt-0.5 inline-flex text-amber-500"
-						size={16}
+						className="ms-2 me-2 -mt-0.5 inline-flex text-amber-500"
+						size={18}
 						aria-hidden="true"
 					/>
 					This is an experimental gallery! Some features may break.
+					<TriangleAlert
+						className="ms-2 me-2 -mt-0.5 inline-flex text-amber-500"
+						size={18}
+						aria-hidden="true"
+					/>
+					<br />
+					{extensionManager.lastUpdated != -1 &&
+						`Last updated ${new Date(
+							extensionManager.lastUpdated
+						).toLocaleDateString()}`}
 				</p>
 			</div>
 			<nav className="rounded-3xl p-6 border border-gray-200 dark:border-gray-700 space-y-4">

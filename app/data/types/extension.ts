@@ -47,3 +47,8 @@ export type ExtensionGallery = {
 	viewLocation?: string;
 	extensions: Extension[];
 };
+
+export type ExtensionJson = {
+	lastUpdated: number;
+	data: ExtensionGallery[];
+};
