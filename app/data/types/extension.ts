@@ -44,6 +44,6 @@ export type ExtensionGallery = {
 	name: string;
 	icon?: string;
 	smallIcon?: boolean;
-	viewLocation: string;
+	viewLocation?: string;
 	extensions: Extension[];
 };

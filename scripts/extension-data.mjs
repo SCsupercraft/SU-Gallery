@@ -1,36 +1,18 @@
-import * as fs from 'node:fs/promises';
-import * as fsSync from 'node:fs';
-import * as path from 'node:path';
-import * as process from 'node:process';
-
-import ExtendedJSON from '@turbowarp/json';
-
-import logSymbols from 'log-symbols';
-import ora from 'ora';
-import { Chalk } from 'chalk';
-const chalk = new Chalk();
-
-import { BuildHelper } from './helper.mjs';
-
 /**
- * @typedef {Object} ExtensionGallery
- * @property {'local' | 'turbowarp-gallery' | 'penguin-mod-gallery'} type The type of gallery.
- * @property {string} id The gallery id. (Used to find files)
- * @property {string} name The gallery name. (Displayed in gallery)
- * @property {string} icon This is the url of the gallery's icon (Displayed in gallery)
- * @property {boolean} smallIcon Should the icon be smaller?
- * @property {string} [location] This is the root url of the gallery, this property is only for external extension galleries.
- * @property {string} [viewLocation] This is the url of the gallery's website, where the user would normally find the gallery's extension. (Displayed in gallery)
- * @property {Extension[]} extensions A list of extensions in this gallery. (Displayed in gallery)
+ * @typedef {"local" | "turbowarp" | "penguinmod"} GalleryType
  */
 
 /**
- * @typedef {Object} ExtensionGalleryMetaData
+ * @typedef {Object} ExtensionGallery
+ * @property {GalleryType} type The type of gallery.
  * @property {string} id The gallery id. (Used to find files)
  * @property {string} name The gallery name. (Displayed in gallery)
- * @property {string} icon The file extension of the gallery's icon. (Used to find the correct file)
- * @property {string} [viewLocation] This is the url of the gallery's website, where the user would normally find the gallery's extension.
- * @property {ExtensionMetaData[]} extensions A list of extensions in this gallery. (Displayed in gallery)
+ * @property {number} priority The gallery's priority. (Not included in file)
+ * @property {string} icon This is the url of the gallery's icon (Displayed in gallery)
+ * @property {boolean} smallIcon Should the icon be smaller?
+ * @property {string} location This is the root url of the gallery, this property is only for external extension galleries.
+ * @property {string} [viewLocation] This is the url of the gallery's website, where the user would normally find the gallery's extension. (Displayed in gallery)
+ * @property {Extension[]} extensions A list of extensions in this gallery. (Displayed in gallery)
  */
 
 /**
@@ -65,10 +47,16 @@ import { BuildHelper } from './helper.mjs';
  * @property {boolean} [featured] Is this extension featured on our gallery?
  */
 
-/**
- * @type {import('./build.config.mjs').Plugin}
- */
-export class ExtensionData {
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
+
+import ora from 'ora';
+import { Chalk } from 'chalk';
+const chalk = new Chalk();
+
+import { BuildHelper } from './helper.mjs';
+
+export class Globals {
 	/**
 	 * The current spinner
 	 * @type {import('ora').Ora}
@@ -80,1370 +68,34 @@ export class ExtensionData {
 	 */
 	static messages;
 	/**
-	 * @type {(LocalGallery | TurbowarpGallery | PenguinModGallery)[]}
-	 */
-	static galleries = [];
-	/**
 	 * Contains extended metadata for extensions.
 	 */
 	static extendedData = {};
-
-	/**
-	 * Initializes this plugin
-	 * @returns {Promise<void>}
-	 */
-	static async initialize() {
-		return new Promise(async (resolve, reject) => {
-			ExtensionData.spinner = ora(
-				chalk.yellowBright('Grabbing galleries...')
-			).start();
-			ExtensionData.spinner.color = 'yellow';
-
-			let galleries;
-			try {
-				const data = await fs.readFile(
-					path.resolve(process.cwd(), 'scripts/.galleries.json'),
-					'utf-8'
-				);
-				galleries = JSON.parse(data);
-				ExtensionData.spinner.succeed(
-					chalk.greenBright('Galleries grabbed')
-				);
-			} catch (e) {
-				ExtensionData.spinner.fail(
-					chalk.redBright('Failed to grab galleries')
-				);
-				reject(`Failed to grab galleries. ${e}`);
-			}
-			let totalExtensions = 0;
-			/**
-			 * Loads an extension gallery.
-			 * @param {ExtensionGallery} gallery The extension gallery.
-			 */
-			const createGallery = (gallery) => {
-				totalExtensions += gallery.extensions.length;
-				switch (gallery.type) {
-					case 'local': {
-						this.galleries.push(new LocalGallery(gallery));
-						break;
-					}
-					case 'turbowarp-gallery': {
-						this.galleries.push(new TurbowarpGallery(gallery));
-						break;
-					}
-					case 'penguin-mod-gallery': {
-						this.galleries.push(new PenguinModGallery(gallery));
-						break;
-					}
-				}
-			};
-			galleries.forEach(createGallery);
-
-			try {
-				for (const i in this.galleries) {
-					const gallery = this.galleries[i];
-					await gallery.initialize();
-				}
-				console.log(
-					chalk.green(
-						`${logSymbols.success} Loaded ${totalExtensions} extensions from ${this.galleries.length} galleries\n`
-					)
-				);
-			} catch (e) {
-				reject(
-					`Failed to load ${this.galleries.length} galleries. ${e}`
-				);
-			}
-			try {
-				await BuildHelper.copy(
-					path.resolve(
-						process.cwd(),
-						`app/data/gallery/extensions/banner/unknown.svg`
-					),
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/banner/unknown.svg`
-					)
-				);
-				await BuildHelper.copy(
-					path.resolve(
-						process.cwd(),
-						`app/data/gallery/galleries/unknown.svg`
-					),
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/galleries/unknown.svg`
-					)
-				);
-
-				for (const i in this.galleries) {
-					const gallery = this.galleries[i];
-					await gallery.prebuildAddExtensions();
-				}
-				console.log(
-					chalk.green(
-						`${logSymbols.success} Added ${totalExtensions} extensions from ${this.galleries.length} galleries`
-					)
-				);
-			} catch (e) {
-				reject(
-					`Failed to add ${this.galleries.length} galleries. ${e}`
-				);
-			}
-
-			resolve();
-		});
-	}
-
-	/**
-	 * Finalizes this plugin
-	 * @returns {Promise<void>}
-	 */
-	static async finalize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				ExtensionData.extendedData = ExtendedJSON.parse(
-					await fs.readFile(
-						path.resolve(
-							process.cwd(),
-							'app/data/gallery/extensions/extend.json'
-						),
-						'utf-8'
-					)
-				);
-				console.log(
-					chalk.green(
-						`${logSymbols.success} Successfully read extended metadata\n`
-					)
-				);
-			} catch (e) {
-				reject(`Failed to read extended metadata. ${e}`);
-			}
-			try {
-				await BuildHelper.copy(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						'extension-data/banner/unknown.svg'
-					),
-					path.resolve(
-						BuildHelper.getClientBuildDir(),
-						'gallery/extensions/banner/unknown.svg'
-					)
-				);
-				await BuildHelper.copy(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						'extension-data/galleries/unknown.svg'
-					),
-					path.resolve(
-						BuildHelper.getClientBuildDir(),
-						'gallery/galleries/unknown.svg'
-					)
-				);
-				await BuildHelper.write(
-					path.resolve(
-						BuildHelper.getClientBuildDir(),
-						'gallery/extensions/galleries.json'
-					),
-					'[]',
-					'utf-8'
-				);
-				for (const i in this.galleries) {
-					const gallery = this.galleries[i];
-					await gallery.finalize();
-				}
-				const totalExtensions = this.galleries.reduce(
-					(total, gallery) => {
-						return total + gallery.extensions.length;
-					},
-					0
-				);
-				console.log(
-					chalk.green(
-						`${logSymbols.success} Added ${totalExtensions} extensions from ${this.galleries.length} galleries`
-					)
-				);
-			} catch (e) {
-				reject(
-					`Failed to add ${this.galleries.length} galleries. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
 }
 
-class LocalGallery {
-	/**
-	 * The id of this gallery
-	 * @type {string}
-	 */
-	id;
-	/**
-	 * The name of this gallery
-	 * @type {string}
-	 */
-	name = '';
-	/**
-	 * The file extension of this gallery's icon
-	 * @type {string}
-	 */
-	icon;
-	/**
-	 * Should the icon be smaller?
-	 * @type {boolean}
-	 */
-	smallIcon;
-	/**
-	 * The data of this gallery (Used for loading extensions in the initialization phase)
-	 * @type {ExtensionGallery}
-	 */
-	galleryData = {};
-	/**
-	 * The data of this gallery's extensions (Used for loading extensions in the initialization phase)
-	 * @type {Extension[]}
-	 */
-	extensionData = [];
-	/**
-	 * The extensions loaded by this gallery during initialization
-	 * @type {LocalExtensionData[]}
-	 */
-	extensions = [];
+/**
+ * @type {{[key: string]: ExtensionData}}
+ */
+export const extensionTypes = {};
 
-	/**
-	 * Takes in a gallery object.
-	 * The provided gallery type must be `local`
-	 * @param {ExtensionGallery} gallery
-	 */
-	constructor(gallery) {
-		if (gallery.type != 'local') throw new Error('Invalid gallery type!');
+/**
+ * @type {{[key: string]: ExtensionGalleryData}}
+ */
+export const galleryTypes = {};
 
-		this.id = gallery.id;
-		this.name = gallery.name;
-		this.smallIcon = gallery.smallIcon;
-		this.galleryData = gallery;
-		this.extensionData = gallery.extensions;
-
-		console.log(
-			`${chalk.gray('found')} ${chalk.blueBright(this.name)} ${chalk.grey(
-				this.getGalleryTypeText()
-			)}`
-		);
-	}
-
-	/**
-	 * Gets the text representation of the gallery type
-	 * @returns {string} The text representation of the gallery type;
-	 */
-	getGalleryTypeText() {
-		return '(local)';
-	}
-
-	/**
-	 * Initializes this gallery. (Runs before initial build)
-	 * @returns {Promise<void>}
-	 */
-	async initialize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.findIconExtension();
-				await this.addIcon();
-				await this.loadExtensions();
-				resolve();
-			} catch (e) {
-				reject(e);
-			}
-		});
-	}
-	/**
-	 * Finalizes this gallery. (Runs after initial build)
-	 * @returns {Promise<void>}
-	 */
-	async finalize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.moveFilesToBuild();
-				await this.addToGalleryJson();
-				await this.postbuildAddExtensions();
-			} catch (e) {
-				reject(`Failed to finalize gallery ${this.id}. ${e}`);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds the icon to the `prebuildDirectory`
-	 * @returns {Promise<void>}
-	 */
-	async addIcon() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await BuildHelper.copy(
-					path.resolve(
-						process.cwd(),
-						`app/data/gallery/galleries/${this.id}.${this.icon}`
-					),
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/galleries/${this.id}.${this.icon}`
-					)
-				);
-			} catch (e) {}
-			resolve();
-		});
-	}
-
-	/**
-	 * Finds the file extension of the icon and updates `this.icon`
-	 */
-	async findIconExtension() {
-		const extensions = ['svg', 'png', 'jpg'];
-		for (let i in extensions) {
-			const extension = extensions[i];
-			const exists = await BuildHelper.exists(
-				path.resolve(
-					process.cwd(),
-					`app/data/gallery/galleries/${this.id}.${extension}`
-				)
-			);
-			if (exists) {
-				this.icon = extension;
-				break;
-			}
-		}
-	}
-
-	/**
-	 * Loads all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async loadExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Loading extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensionData) {
-					const extension = this.extensionData[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensionData.length
-						} - ${extension.id})`
-					);
-					this.extensions.push(
-						new LocalExtensionData(extension, this.galleryData)
-					);
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Loaded ${this.extensionData.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to load ${
-							this.extensionData.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to load ${this.extensionData.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async prebuildAddExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Adding extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensions) {
-					const extension = this.extensions[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensions.length
-						} - ${extension.id})`
-					);
-					await extension.addExtension();
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Added ${this.extensions.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to add ${
-							this.extensions.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async postbuildAddExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Adding extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensions) {
-					const extension = this.extensions[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensions.length
-						} - ${extension.id})`
-					);
-					await extension.finalize();
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Added ${this.extensions.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to add ${
-							this.extensions.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds the gallery metadata to the `galleries.json` file
-	 * @returns {Promise<void>}
-	 */
-	async addToGalleryJson() {
-		const extensionsJson = path.resolve(
-			BuildHelper.getClientBuildDir(),
-			'gallery/extensions/galleries.json'
-		);
-		return new Promise(async (resolve, reject) => {
-			/** @type {ExtensionGalleryMetaData[]} */
-			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			json.push({
-				id: this.id,
-				name: this.name,
-				icon: this.icon,
-				smallIcon: this.smallIcon,
-				extensions: [],
-			});
-			await BuildHelper.write(
-				extensionsJson,
-				JSON.stringify(json),
-				'utf-8'
-			);
-			ExtensionData.messages.push(
-				`${chalk.gray('added metadata for')} ${chalk.blueBright(
-					this.name
-				)}`
-			);
-			resolve();
-		});
-	}
-
-	/**
-	 * Move the extensions files from the `prebuild` directory to the `build` directory
-	 * @returns {Promise<void>}
-	 */
-	async moveFilesToBuild() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				if (this.icon != undefined)
-					await BuildHelper.copy(
-						path.resolve(
-							BuildHelper.prebuildDirectory,
-							`extension-data/galleries/${this.id}.${this.icon}`
-						),
-						path.resolve(
-							BuildHelper.getClientBuildDir(),
-							`gallery/galleries/${this.id}.${this.icon}`
-						)
-					);
-			} catch (e) {
-				reject(e);
-			}
-			resolve();
-		});
-	}
-}
-
-class TurbowarpGallery {
-	/**
-	 * The id of this gallery
-	 * @type {string}
-	 */
-	id;
-	/**
-	 * The name of this gallery
-	 * @type {string}
-	 */
-	name = '';
-	/**
-	 * The file extension of this gallery's icon
-	 * @type {string}
-	 */
-	icon;
-	/**
-	 * Should the icon be smaller?
-	 * @type {boolean}
-	 */
-	smallIcon;
-	/**
-	 * The location of this gallery
-	 * @type {string}
-	 */
-	location = '';
-	/**
-	 * This is the url of the gallery's website, where the user would normally find the gallery's extension.
-	 * @type {string}
-	 */
-	viewLocation = '';
-	/**
-	 * This is the url of the gallery's icon
-	 * @type {string}
-	 */
-	iconLocation = '';
-	/**
-	 * The data of this gallery (Used for loading extensions in the initialization phase)
-	 * @type {ExtensionGallery}
-	 */
-	galleryData = {};
-	/**
-	 * The data of this gallery's extensions (Used for loading extensions in the initialization phase)
-	 * @type {Extension[]}
-	 */
-	extensionData = [];
-	/**
-	 * The extensions loaded by this gallery during initialization
-	 * @type {TurbowarpGalleryExtensionData[]}
-	 */
-	extensions = [];
-
-	/**
-	 * Takes in a gallery object.
-	 * The provided gallery type must be `turbowarp-gallery`
-	 * @param {ExtensionGallery} gallery
-	 */
-	constructor(gallery) {
-		if (gallery.type != 'turbowarp-gallery')
-			throw new Error('Invalid gallery type!');
-
-		this.id = gallery.id;
-		this.name = gallery.name;
-		this.smallIcon = gallery.smallIcon;
-		this.location = gallery.location;
-		this.viewLocation = gallery.viewLocation;
-		this.iconLocation = gallery.icon;
-		this.galleryData = gallery;
-		this.extensionData = gallery.extensions;
-
-		console.log(
-			`${chalk.gray('found')} ${chalk.blueBright(this.name)} ${chalk.grey(
-				this.getGalleryTypeText()
-			)}`
-		);
-	}
-
-	/**
-	 * Gets the text representation of the gallery type
-	 * @returns {string} The text representation of the gallery type;
-	 */
-	getGalleryTypeText() {
-		return `(turbowarp-gallery@${this.viewLocation})`;
-	}
-
-	/**
-	 * Initializes this gallery. (Runs before initial build)
-	 * @returns {Promise<void>}
-	 */
-	async initialize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.addIcon();
-				await this.loadExtensions();
-				resolve();
-			} catch (e) {
-				reject(e);
-			}
-		});
-	}
-	/**
-	 * Finalizes this gallery. (Runs after initial build)
-	 * @returns {Promise<void>}
-	 */
-	async finalize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.moveFilesToBuild();
-				await this.addToGalleryJson();
-				await this.postbuildAddExtensions();
-			} catch (e) {
-				reject(`Failed to finalize gallery ${this.id}. ${e}`);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds the icon to the `prebuildDirectory`
-	 * @returns {Promise<void>}
-	 */
-	async addIcon() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				if (!this.iconLocation) throw new Error();
-				this.icon = this.iconLocation.split('.').pop();
-				const banner = await fetch(this.iconLocation);
-				/** @type {Blob} */
-				const imgContent = await banner.blob();
-				await BuildHelper.write(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/galleries/${this.id}.${this.icon}`
-					),
-					await imgContent.bytes(),
-					'utf-8'
-				);
-			} catch (e) {}
-			resolve();
-		});
-	}
-
-	/**
-	 * Loads all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async loadExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Loading extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensionData) {
-					const extension = this.extensionData[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensionData.length
-						} - ${extension.id})`
-					);
-					this.extensions.push(
-						new TurbowarpGalleryExtensionData(
-							extension,
-							this.galleryData
-						)
-					);
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Loaded ${this.extensionData.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to load ${
-							this.extensionData.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to load ${this.extensionData.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async prebuildAddExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Adding extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensions) {
-					const extension = this.extensions[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensions.length
-						} - ${extension.id})`
-					);
-					await extension.addExtension();
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Added ${this.extensions.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to add ${
-							this.extensions.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async postbuildAddExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Adding extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensions) {
-					const extension = this.extensions[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensions.length
-						} - ${extension.id})`
-					);
-					await extension.finalize();
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Added ${this.extensions.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to add ${
-							this.extensions.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds the gallery metadata to the `galleries.json` file
-	 * @returns {Promise<void>}
-	 */
-	async addToGalleryJson() {
-		const extensionsJson = path.resolve(
-			BuildHelper.getClientBuildDir(),
-			'gallery/extensions/galleries.json'
-		);
-		return new Promise(async (resolve, reject) => {
-			/** @type {ExtensionGalleryMetaData[]} */
-			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			json.push({
-				id: this.id,
-				name: this.name,
-				icon: this.icon,
-				smallIcon: this.smallIcon,
-				viewLocation: this.viewLocation,
-				extensions: [],
-			});
-			await BuildHelper.write(
-				extensionsJson,
-				JSON.stringify(json),
-				'utf-8'
-			);
-			ExtensionData.messages.push(
-				`${chalk.gray('added metadata for')} ${chalk.blueBright(
-					this.name
-				)}`
-			);
-			resolve();
-		});
-	}
-
-	/**
-	 * Move the extensions files from the `prebuild` directory to the `build` directory
-	 * @returns {Promise<void>}
-	 */
-	async moveFilesToBuild() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				if (this.icon != undefined)
-					await BuildHelper.copy(
-						path.resolve(
-							BuildHelper.prebuildDirectory,
-							`extension-data/galleries/${this.id}.${this.icon}`
-						),
-						path.resolve(
-							BuildHelper.getClientBuildDir(),
-							`gallery/galleries/${this.id}.${this.icon}`
-						)
-					);
-			} catch (e) {
-				reject(e);
-			}
-			resolve();
-		});
-	}
-}
-
-class PenguinModGallery {
-	/**
-	 * The id of this gallery
-	 * @type {string}
-	 */
-	id;
-	/**
-	 * The name of this gallery
-	 * @type {string}
-	 */
-	name = '';
-	/**
-	 * The file extension of this gallery's icon
-	 * @type {string}
-	 */
-	icon;
-	/**
-	 * Should the icon be smaller?
-	 * @type {boolean}
-	 */
-	smallIcon;
-	/**
-	 * The location of this gallery
-	 * @type {string}
-	 */
-	location = '';
-	/**
-	 * This is the url of the gallery's website, where the user would normally find the gallery's extension.
-	 * @type {string}
-	 */
-	viewLocation = '';
-	/**
-	 * This is the url of the gallery's icon
-	 * @type {string}
-	 */
-	iconLocation = '';
-	/**
-	 * The data of this gallery (Used for loading extensions in the initialization phase)
-	 * @type {ExtensionGallery}
-	 */
-	galleryData = {};
-	/**
-	 * The data of this gallery's extensions (Used for loading extensions in the initialization phase)
-	 * @type {Extension[]}
-	 */
-	extensionData = [];
-	/**
-	 * The extensions loaded by this gallery during initialization
-	 * @type {PenguinModGalleryExtensionData[]}
-	 */
-	extensions = [];
-
-	/**
-	 * Takes in a gallery object.
-	 * The provided gallery type must be `penguin-mod-gallery`
-	 * @param {ExtensionGallery} gallery
-	 */
-	constructor(gallery) {
-		if (gallery.type != 'penguin-mod-gallery')
-			throw new Error('Invalid gallery type!');
-
-		this.id = gallery.id;
-		this.name = gallery.name;
-		this.smallIcon = gallery.smallIcon;
-		this.location = gallery.location;
-		this.viewLocation = gallery.viewLocation;
-		this.iconLocation = gallery.icon;
-		this.galleryData = gallery;
-		this.extensionData = gallery.extensions;
-
-		console.log(
-			`${chalk.gray('found')} ${chalk.blueBright(this.name)} ${chalk.grey(
-				this.getGalleryTypeText()
-			)}`
-		);
-	}
-
-	/**
-	 * Gets the text representation of the gallery type
-	 * @returns {string} The text representation of the gallery type;
-	 */
-	getGalleryTypeText() {
-		return `(penguin-mod-gallery@${this.viewLocation})`;
-	}
-
-	/**
-	 * Initializes this gallery. (Runs before initial build)
-	 * @returns {Promise<void>}
-	 */
-	async initialize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.addIcon();
-				await this.loadExtensions();
-				resolve();
-			} catch (e) {
-				reject(e);
-			}
-		});
-	}
-	/**
-	 * Finalizes this gallery. (Runs after initial build)
-	 * @returns {Promise<void>}
-	 */
-	async finalize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.moveFilesToBuild();
-				await this.addToGalleryJson();
-				await this.postbuildAddExtensions();
-			} catch (e) {
-				reject(`Failed to finalize gallery ${this.id}. ${e}`);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds the icon to the `prebuildDirectory`
-	 * @returns {Promise<void>}
-	 */
-	async addIcon() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				if (!this.iconLocation) throw new Error();
-				this.icon = this.iconLocation.split('.').pop();
-				const banner = await fetch(this.iconLocation);
-				/** @type {Blob} */
-				const imgContent = await banner.blob();
-				await BuildHelper.write(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/galleries/${this.id}.${this.icon}`
-					),
-					await imgContent.bytes(),
-					'utf-8'
-				);
-			} catch (e) {}
-			resolve();
-		});
-	}
-
-	/**
-	 * Loads all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async loadExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Loading extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensionData) {
-					const extension = this.extensionData[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensionData.length
-						} - ${extension.id})`
-					);
-					this.extensions.push(
-						new PenguinModGalleryExtensionData(
-							extension,
-							this.galleryData
-						)
-					);
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Loaded ${this.extensionData.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to load ${
-							this.extensionData.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to load ${this.extensionData.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async prebuildAddExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Adding extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensions) {
-					const extension = this.extensions[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensions.length
-						} - ${extension.id})`
-					);
-					await extension.addExtension();
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Added ${this.extensions.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to add ${
-							this.extensions.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds all of the extensions under this gallery.
-	 * @returns {Promise<void>}
-	 */
-	async postbuildAddExtensions() {
-		return new Promise(async (resolve, reject) => {
-			(async () => {
-				ExtensionData.spinner = ora({
-					text: `${chalk.yellowBright(
-						'Adding extensions from'
-					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`,
-					color: 'yellow',
-				}).start();
-			})();
-
-			try {
-				ExtensionData.messages = [];
-
-				for (const i in this.extensions) {
-					const extension = this.extensions[i];
-					ExtensionData.spinner.suffixText = chalk.gray(
-						`(${Number.parseInt(i) + 1}/${
-							this.extensions.length
-						} - ${extension.id})`
-					);
-					await extension.finalize();
-				}
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.succeed(
-					`${chalk.green(
-						`Added ${this.extensions.length} extensions from`
-					)} ${chalk.blueBright(this.name)} ${chalk.gray(
-						this.getGalleryTypeText()
-					)}`
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-			} catch (e) {
-				ExtensionData.spinner.suffixText = '';
-				ExtensionData.spinner.fail(
-					chalk.redBright(
-						`Failed to add ${
-							this.extensions.length
-						} extensions from ${this.name} ${chalk.gray(
-							this.getGalleryTypeText()
-						)}`
-					)
-				);
-				ExtensionData.messages.forEach((message) => {
-					console.log(`${message}`);
-				});
-				reject(
-					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Adds the gallery metadata to the `galleries.json` file
-	 * @returns {Promise<void>}
-	 */
-	async addToGalleryJson() {
-		const extensionsJson = path.resolve(
-			BuildHelper.getClientBuildDir(),
-			'gallery/extensions/galleries.json'
-		);
-		return new Promise(async (resolve, reject) => {
-			/** @type {ExtensionGalleryMetaData[]} */
-			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			json.push({
-				id: this.id,
-				name: this.name,
-				icon: this.icon,
-				smallIcon: this.smallIcon,
-				viewLocation: this.viewLocation,
-				extensions: [],
-			});
-			await BuildHelper.write(
-				extensionsJson,
-				JSON.stringify(json),
-				'utf-8'
-			);
-			ExtensionData.messages.push(
-				`${chalk.gray('added metadata for')} ${chalk.blueBright(
-					this.name
-				)}`
-			);
-			resolve();
-		});
-	}
-
-	/**
-	 * Move the extensions files from the `prebuild` directory to the `build` directory
-	 * @returns {Promise<void>}
-	 */
-	async moveFilesToBuild() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				if (this.icon != undefined)
-					await BuildHelper.copy(
-						path.resolve(
-							BuildHelper.prebuildDirectory,
-							`extension-data/galleries/${this.id}.${this.icon}`
-						),
-						path.resolve(
-							BuildHelper.getClientBuildDir(),
-							`gallery/galleries/${this.id}.${this.icon}`
-						)
-					);
-			} catch (e) {
-				reject(e);
-			}
-			resolve();
-		});
+/**
+ * Get the text representation of the galleries type.
+ * @param {GalleryType} type The type of gallery.
+ * @param {string} [location] The gallery location.
+ */
+export function getGalleryTypeText(type, location) {
+	switch (type) {
+		case 'local':
+			return `(${type})`;
+		case 'turbowarp':
+		case 'penguinmod':
+		case 'ruby':
+			return `(${type}@${location})`;
 	}
 }
 
@@ -1452,13 +104,13 @@ class PenguinModGallery {
  * @param {string} split
  * @returns {string[]}
  */
-const splitFirst = (string, split) => {
+export function splitFirst(string, split) {
 	const idx = string.indexOf(split);
 	if (idx === -1) {
 		return [string];
 	}
 	return [string.substring(0, idx), string.substring(idx + split.length)];
-};
+}
 
 /**
  * Parses text and returns the author parsed
@@ -1466,7 +118,7 @@ const splitFirst = (string, split) => {
  * @param {'creator' | 'originalCreator'} type The type of author
  * @returns {ExtensionAuthor} The author parsed
  */
-function parseAuthor(data, type) {
+export function parseAuthor(data, type) {
 	const parts = splitFirst(data, '<');
 	if (parts.length === 1) {
 		/** @type {ExtensionAuthor} */
@@ -1495,7 +147,7 @@ function parseAuthor(data, type) {
  * @param {string} data Data to parse
  * @returns {ExtensionBadge} The badge parsed
  */
-function parseBadge(data) {
+export function parseBadge(data) {
 	const parts = splitFirst(data, '-');
 	if (parts.length === 1) {
 		/** @type {ExtensionBadge} */
@@ -1522,7 +174,7 @@ function parseBadge(data) {
  * @param {string} extensionId The id of the extension to parse
  * @param {string} galleryId The id of the gallery the extension is part of
  */
-async function parseMetaData(extensionId, galleryId) {
+export async function parseMetaData(extensionId, galleryId) {
 	const code = await fs.readFile(
 		path.resolve(
 			BuildHelper.prebuildDirectory,
@@ -1585,7 +237,7 @@ async function parseMetaData(extensionId, galleryId) {
 	return metadata;
 }
 
-class LocalExtensionData {
+export class ExtensionData {
 	/**
 	 * The extension id
 	 * @type {string}
@@ -1609,18 +261,15 @@ class LocalExtensionData {
 
 	/**
 	 * Takes in an extension object.
-	 * The provided gallery type must be `local`
 	 * @param {Extension} extension
 	 * @param {ExtensionGallery} gallery
 	 */
 	constructor(extension, gallery) {
-		if (gallery.type != 'local') throw new Error('Invalid gallery type!');
-
 		this.id = extension.id;
 		this.featured = extension.featured != null ? extension.featured : false;
 		this.gallery = gallery;
 
-		ExtensionData.messages.push(
+		Globals.messages.push(
 			`${chalk.gray('loaded')} ${chalk.blueBright(this.id)}`
 		);
 	}
@@ -1640,6 +289,7 @@ class LocalExtensionData {
 			}
 		});
 	}
+
 	/**
 	 * Finalizes this extension. (Runs after initial build)
 	 * @returns {Promise<void>}
@@ -1662,26 +312,7 @@ class LocalExtensionData {
 	 */
 	async addCode() {
 		return new Promise(async (resolve, reject) => {
-			try {
-				await BuildHelper.copy(
-					path.resolve(
-						process.cwd(),
-						`app/data/gallery/extensions/code/${this.id}.js`
-					),
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/code/${this.gallery.id}/${this.id}.js`
-					)
-				);
-				ExtensionData.messages.push(
-					`${chalk.gray('added code for')} ${chalk.blueBright(
-						this.id
-					)}`
-				);
-			} catch (e) {
-				reject(`Failed to add extension ${this.id}. ${e}`);
-			}
-			resolve();
+			reject('Method not implemented!');
 		});
 	}
 
@@ -1691,51 +322,8 @@ class LocalExtensionData {
 	 */
 	async addBanner() {
 		return new Promise(async (resolve, reject) => {
-			try {
-				await this.findBannerExtension();
-				await BuildHelper.copy(
-					path.resolve(
-						process.cwd(),
-						`app/data/gallery/extensions/banner/${this.id}.${this.banner}`
-					),
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/banner/${this.gallery.id}/${this.id}.${this.banner}`
-					)
-				);
-				ExtensionData.messages.push(
-					`${chalk.gray('added banner for')} ${chalk.blueBright(
-						this.id
-					)}`
-				);
-			} catch (e) {
-				ExtensionData.messages.push(
-					chalk.yellowBright(`${this.id} has no extension banner`)
-				);
-			}
-			resolve();
+			reject('Method not implemented!');
 		});
-	}
-
-	/**
-	 * Finds the file extension of the banner and updates `this.banner`
-	 */
-	async findBannerExtension() {
-		const extensions = ['svg', 'png', 'jpg'];
-		for (let i in extensions) {
-			const extension = extensions[i];
-			const exists = await BuildHelper.exists(
-				path.resolve(
-					process.cwd(),
-					`app/data/gallery/extensions/banner/${this.id}.${extension}`
-				)
-			);
-			if (exists) {
-				this.banner = extension;
-				break;
-			}
-		}
-		if (!this.banner) throw new Error(`${this.id} has no extension banner`);
 	}
 
 	/**
@@ -1743,33 +331,8 @@ class LocalExtensionData {
 	 * @returns {Promise<void>}
 	 */
 	async addToGalleryJson() {
-		const extensionsJson = path.resolve(
-			BuildHelper.getClientBuildDir(),
-			'gallery/extensions/galleries.json'
-		);
 		return new Promise(async (resolve, reject) => {
-			/** @type {ExtensionGalleryMetaData[]} */
-			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			const parsed = {
-				...(await parseMetaData(this.id, this.gallery.id)),
-				...ExtensionData.extendedData[this.id],
-				banner: this.banner,
-				featured: this.featured,
-			};
-			json.find((gallery) => {
-				return gallery.name === this.gallery.name;
-			}).extensions.push(parsed);
-			await BuildHelper.write(
-				extensionsJson,
-				JSON.stringify(json),
-				'utf-8'
-			);
-			ExtensionData.messages.push(
-				`${chalk.gray('added metadata for')} ${chalk.blueBright(
-					this.id
-				)}`
-			);
-			resolve();
+			reject('Method not implemented!');
 		});
 	}
 
@@ -1809,56 +372,99 @@ class LocalExtensionData {
 	}
 }
 
-class TurbowarpGalleryExtensionData {
+export class ExtensionGalleryData {
 	/**
-	 * The extension id
+	 * The id of this gallery
 	 * @type {string}
 	 */
 	id;
 	/**
-	 * The file extension of this extensions banner
+	 * The name of this gallery
 	 * @type {string}
 	 */
-	banner;
+	name;
 	/**
-	 * Is the extension featured
+	 * The file extension of this gallery's icon
+	 * @type {string}
+	 */
+	icon;
+	/**
+	 * Should the icon be smaller?
 	 * @type {boolean}
 	 */
-	featured;
+	smallIcon;
 	/**
-	 * The gallery this extension is in
+	 * The location of this gallery
+	 * @type {string}
+	 */
+	location;
+	/**
+	 * This is the url of the gallery's website, where the user would normally find the gallery's extension.
+	 * @type {string?}
+	 */
+	viewLocation;
+	/**
+	 * This is the url of the gallery's icon
+	 * @type {string}
+	 */
+	iconLocation;
+	/**
+	 * The data of this gallery (Used for loading extensions in the initialization phase)
 	 * @type {ExtensionGallery}
 	 */
-	gallery;
+	galleryData = {};
+	/**
+	 * The data of this gallery's extensions (Used for loading extensions in the initialization phase)
+	 * @type {Extension[]}
+	 */
+	extensionData = [];
+	/**
+	 * The extensions loaded by this gallery during initialization
+	 * @type {ExtensionData[]}
+	 */
+	extensions = [];
 
 	/**
-	 * Takes in an extension object.
-	 * The provided gallery type must be `turbowarp-gallery`
-	 * @param {Extension} extension
+	 * Takes in a gallery object.
 	 * @param {ExtensionGallery} gallery
 	 */
-	constructor(extension, gallery) {
-		if (gallery.type != 'turbowarp-gallery')
-			throw new Error('Invalid gallery type!');
+	constructor(gallery) {
+		this.id = gallery.id;
+		this.name = gallery.name;
+		this.smallIcon = gallery.smallIcon;
+		this.location = gallery.location;
+		this.viewLocation = gallery.viewLocation;
+		this.iconLocation = gallery.icon;
+		this.galleryData = gallery;
+		this.extensionData = gallery.extensions;
 
-		this.id = extension.id;
-		this.featured = extension.featured != null ? extension.featured : false;
-		this.gallery = gallery;
-
-		ExtensionData.messages.push(
-			`${chalk.gray('loaded')} ${chalk.blueBright(this.id)}`
+		console.log(
+			`${chalk.gray('found')} ${chalk.blueBright(this.name)} ${chalk.grey(
+				this.getGalleryTypeText()
+			)}`
 		);
 	}
 
 	/**
-	 * Adds this extension. (Runs before initial build)
+	 * Gets the text representation of the gallery type
+	 * @returns {string} The text representation of the gallery type;
+	 */
+	getGalleryTypeText() {
+		return getGalleryTypeText(
+			this.galleryData.type,
+			this.galleryData.viewLocation || this.galleryData.location
+		);
+	}
+
+	/**
+	 * Initializes this gallery. (Runs before initial build)
 	 * @returns {Promise<void>}
 	 */
-	async addExtension() {
+	async initialize() {
 		return new Promise(async (resolve, reject) => {
 			try {
-				await this.addCode();
-				await this.addBanner();
+				await this.addIcon();
+				await this.loadExtensions();
 				resolve();
 			} catch (e) {
 				reject(e);
@@ -1867,7 +473,7 @@ class TurbowarpGalleryExtensionData {
 	}
 
 	/**
-	 * Finalizes this extension. (Runs after initial build)
+	 * Finalizes this gallery. (Runs after initial build)
 	 * @returns {Promise<void>}
 	 */
 	async finalize() {
@@ -1875,317 +481,147 @@ class TurbowarpGalleryExtensionData {
 			try {
 				await this.moveFilesToBuild();
 				await this.addToGalleryJson();
+				await this.postbuildAddExtensions();
 			} catch (e) {
-				reject(`Failed to finalize extension ${this.id}. ${e}`);
+				reject(`Failed to finalize gallery ${this.id}. ${e}`);
 			}
 			resolve();
 		});
 	}
 
 	/**
-	 * Adds the code to the `prebuildDirectory`
+	 * Adds the icon to the `prebuildDirectory`
 	 * @returns {Promise<void>}
 	 */
-	async addCode() {
+	async addIcon() {
 		return new Promise(async (resolve, reject) => {
+			reject('Method not implemented!');
+		});
+	}
+
+	/**
+	 * Loads all of the extensions under this gallery.
+	 * @returns {Promise<void>}
+	 */
+	async loadExtensions() {
+		return new Promise(async (resolve, reject) => {
+			(async () => {
+				Globals.spinner = ora({
+					text: `${chalk.yellowBright(
+						'Loading extensions from'
+					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
+						this.getGalleryTypeText()
+					)}`,
+					color: 'yellow',
+				}).start();
+			})();
+
 			try {
-				const code = await fetch(
-					`${this.gallery.location}extensions/${this.id}.js`
-				);
-				if (code.status != 200)
-					throw new Error(
-						`Failed to fetch code for ${this.id}. Tried to fetch ${this.gallery.location}extensions/${this.id}.js`
+				Globals.messages = [];
+
+				for (const i in this.extensionData) {
+					const extension = this.extensionData[i];
+					Globals.spinner.suffixText = chalk.gray(
+						`(${Number.parseInt(i) + 1}/${
+							this.extensionData.length
+						} - ${extension.id})`
 					);
-				await BuildHelper.write(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/code/${this.gallery.id}/${this.id}.js`
-					),
-					await code.text(),
-					'utf-8'
-				);
-				ExtensionData.messages.push(
-					`${chalk.gray('added code for')} ${chalk.blueBright(
-						this.id
-					)}`
-				);
-			} catch (e) {
-				reject(`Failed to add extension ${this.id}. ${e}`);
-			}
-			resolve();
-		});
-	}
-	/**
-	 * Adds the banner to the `prebuildDirectory`
-	 * @returns {Promise<void>}
-	 */
-	async addBanner() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.findBannerExtension();
-				const banner = await fetch(
-					`${this.gallery.location}/images/${this.id}.${this.banner}`
-				);
-				/** @type {Blob} */
-				const imgContent = await banner.blob();
-				await BuildHelper.write(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/banner/${this.gallery.id}/${this.id}.${this.banner}`
-					),
-					await imgContent.bytes(),
-					'utf-8'
-				);
-				ExtensionData.messages.push(
-					`${chalk.gray('added banner for')} ${chalk.blueBright(
-						this.id
-					)}`
-				);
-			} catch (e) {
-				ExtensionData.messages.push(
-					chalk.yellowBright(`${this.id} has no extension banner`)
-				);
-			}
-			resolve();
-		});
-	}
-
-	/**
-	 * Finds the file extension of the banner and updates `this.banner`
-	 */
-	async findBannerExtension() {
-		const extensions = ['svg', 'png', 'jpg'];
-		for (let i in extensions) {
-			const extension = extensions[i];
-			try {
-				const banner = await fetch(
-					`${this.gallery.location}/images/${this.id}.${extension}`
-				);
-				if (banner.ok) {
-					this.banner = extension;
-					break;
+					this.extensions.push(
+						new extensionTypes[this.galleryData.type](
+							extension,
+							this.galleryData
+						)
+					);
 				}
-			} catch (e) {}
-		}
-		if (!this.banner) throw new Error(`${this.id} has no extension banner`);
-	}
-
-	/**
-	 * Adds the extension metadata to the `galleries.json` file
-	 * @returns {Promise<void>}
-	 */
-	async addToGalleryJson() {
-		const extensionsJson = path.resolve(
-			BuildHelper.getClientBuildDir(),
-			'gallery/extensions/galleries.json'
-		);
-		return new Promise(async (resolve, reject) => {
-			/** @type {ExtensionGalleryMetaData[]} */
-			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			const parsed = {
-				...(await parseMetaData(this.id, this.gallery.id)),
-				...ExtensionData.extendedData[this.id],
-				banner: this.banner,
-				featured: this.featured,
-			};
-			json.find((gallery) => {
-				return gallery.name === this.gallery.name;
-			}).extensions.push(parsed);
-			await BuildHelper.write(
-				extensionsJson,
-				JSON.stringify(json),
-				'utf-8'
-			);
-			ExtensionData.messages.push(
-				`${chalk.gray('added metadata for')} ${chalk.blueBright(
-					this.id
-				)}`
-			);
-			resolve();
-		});
-	}
-
-	/**
-	 * Move the extensions files from the `prebuild` directory to the `build` directory
-	 * @returns {Promise<void>}
-	 */
-	async moveFilesToBuild() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await BuildHelper.copy(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/code/${this.gallery.id}/${this.id}.js`
-					),
-					path.resolve(
-						BuildHelper.getClientBuildDir(),
-						`gallery/extensions/code/${this.gallery.id}/${this.id}.js`
+				Globals.spinner.suffixText = '';
+				Globals.spinner.succeed(
+					`${chalk.green(
+						`Loaded ${this.extensionData.length} extensions from`
+					)} ${chalk.blueBright(this.name)} ${chalk.gray(
+						this.getGalleryTypeText()
+					)}`
+				);
+				Globals.messages.forEach((message) => {
+					console.log(`${message}`);
+				});
+			} catch (e) {
+				Globals.spinner.suffixText = '';
+				Globals.spinner.fail(
+					chalk.redBright(
+						`Failed to load ${
+							this.extensionData.length
+						} extensions from ${this.name} ${chalk.gray(
+							this.getGalleryTypeText()
+						)}`
 					)
 				);
-				if (this.banner != undefined)
-					await BuildHelper.copy(
-						path.resolve(
-							BuildHelper.prebuildDirectory,
-							`extension-data/banner/${this.gallery.id}/${this.id}.${this.banner}`
-						),
-						path.resolve(
-							BuildHelper.getClientBuildDir(),
-							`gallery/extensions/banner/${this.gallery.id}/${this.id}.${this.banner}`
-						)
-					);
-			} catch (e) {
-				reject(e);
-			}
-			resolve();
-		});
-	}
-}
-
-class PenguinModGalleryExtensionData {
-	/**
-	 * The extension id
-	 * @type {string}
-	 */
-	id;
-	/**
-	 * The file extension of this extensions banner
-	 * @type {string}
-	 */
-	banner;
-	/**
-	 * Is the extension featured
-	 * @type {boolean}
-	 */
-	featured;
-	/**
-	 * @type {ExtensionMetaData}
-	 */
-	metadata;
-	/**
-	 * The gallery this extension is in
-	 * @type {ExtensionGallery}
-	 */
-	gallery;
-
-	/**
-	 * Takes in an extension object.
-	 * The provided gallery type must be `penguin-mod-gallery`
-	 * @param {Extension} extension
-	 * @param {ExtensionGallery} gallery
-	 */
-	constructor(extension, gallery) {
-		if (gallery.type != 'penguin-mod-gallery')
-			throw new Error('Invalid gallery type!');
-
-		this.id = extension.id;
-		this.banner = extension.metadata.banner.slice(
-			extension.metadata.banner.lastIndexOf('.') + 1,
-			extension.metadata.banner.length
-		);
-		this.featured = extension.featured != null ? extension.featured : false;
-		this.metadata = extension.metadata;
-		this.gallery = gallery;
-
-		ExtensionData.messages.push(
-			`${chalk.gray('loaded')} ${chalk.blueBright(this.id)}`
-		);
-	}
-
-	/**
-	 * Adds this extension. (Runs before initial build)
-	 * @returns {Promise<void>}
-	 */
-	async addExtension() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.addCode();
-				await this.addBanner();
-				resolve();
-			} catch (e) {
-				reject(e);
-			}
-		});
-	}
-
-	/**
-	 * Finalizes this extension. (Runs after initial build)
-	 * @returns {Promise<void>}
-	 */
-	async finalize() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				await this.moveFilesToBuild();
-				await this.addToGalleryJson();
-			} catch (e) {
-				reject(`Failed to finalize extension ${this.id}. ${e}`);
+				Globals.messages.forEach((message) => {
+					console.log(`${message}`);
+				});
+				reject(
+					`Failed to load ${this.extensionData.length} extensions from ${this.name}. ${e}`
+				);
 			}
 			resolve();
 		});
 	}
 
 	/**
-	 * Adds the code to the `prebuildDirectory`
+	 * Adds all of the extensions under this gallery.
 	 * @returns {Promise<void>}
 	 */
-	async addCode() {
+	async prebuildAddExtensions() {
 		return new Promise(async (resolve, reject) => {
+			(async () => {
+				Globals.spinner = ora({
+					text: `${chalk.yellowBright(
+						'Adding extensions from'
+					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
+						this.getGalleryTypeText()
+					)}`,
+					color: 'yellow',
+				}).start();
+			})();
+
 			try {
-				const code = await fetch(
-					`${this.gallery.location}static/extensions/${this.id}.js`
-				);
-				if (code.status != 200)
-					throw new Error(
-						`Failed to fetch code for ${this.id}. Tried to fetch ${this.gallery.location}/static/extensions/${this.id}.js`
+				Globals.messages = [];
+
+				for (const i in this.extensions) {
+					const extension = this.extensions[i];
+					Globals.spinner.suffixText = chalk.gray(
+						`(${Number.parseInt(i) + 1}/${
+							this.extensions.length
+						} - ${extension.id})`
 					);
-				await BuildHelper.write(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/code/${this.gallery.id}/${this.id}.js`
-					),
-					await code.text(),
-					'utf-8'
-				);
-				ExtensionData.messages.push(
-					`${chalk.gray('added code for')} ${chalk.blueBright(
-						this.id
+					await extension.addExtension();
+				}
+				Globals.spinner.suffixText = '';
+				Globals.spinner.succeed(
+					`${chalk.green(
+						`Added ${this.extensions.length} extensions from`
+					)} ${chalk.blueBright(this.name)} ${chalk.gray(
+						this.getGalleryTypeText()
 					)}`
 				);
+				Globals.messages.forEach((message) => {
+					console.log(`${message}`);
+				});
 			} catch (e) {
-				reject(`Failed to add extension ${this.id}. ${e}`);
-			}
-			resolve();
-		});
-	}
-	/**
-	 * Adds the banner to the `prebuildDirectory`
-	 * @returns {Promise<void>}
-	 */
-	async addBanner() {
-		return new Promise(async (resolve, reject) => {
-			try {
-				if (!this.metadata.banner)
-					throw new Error(`${this.id} has no extension banner`);
-				const banner = await fetch(
-					`${this.gallery.location}/static/images/${this.metadata.banner}`
+				Globals.spinner.suffixText = '';
+				Globals.spinner.fail(
+					chalk.redBright(
+						`Failed to add ${
+							this.extensions.length
+						} extensions from ${this.name} ${chalk.gray(
+							this.getGalleryTypeText()
+						)}`
+					)
 				);
-				/** @type {Blob} */
-				const imgContent = await banner.blob();
-				await BuildHelper.write(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/banner/${this.gallery.id}/${this.id}.${this.banner}`
-					),
-					await imgContent.bytes(),
-					'utf-8'
-				);
-				ExtensionData.messages.push(
-					`${chalk.gray('added banner for')} ${chalk.blueBright(
-						this.id
-					)}`
-				);
-			} catch (e) {
-				ExtensionData.messages.push(
-					chalk.yellowBright(`${this.id} has no extension banner`)
+				Globals.messages.forEach((message) => {
+					console.log(`${message}`);
+				});
+				reject(
+					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
 				);
 			}
 			resolve();
@@ -2193,7 +629,69 @@ class PenguinModGalleryExtensionData {
 	}
 
 	/**
-	 * Adds the extension metadata to the `galleries.json` file
+	 * Adds all of the extensions under this gallery.
+	 * @returns {Promise<void>}
+	 */
+	async postbuildAddExtensions() {
+		return new Promise(async (resolve, reject) => {
+			(async () => {
+				Globals.spinner = ora({
+					text: `${chalk.yellowBright(
+						'Adding extensions from'
+					)} ${chalk.blueBright(this.name + '...')} ${chalk.gray(
+						this.getGalleryTypeText()
+					)}`,
+					color: 'yellow',
+				}).start();
+			})();
+
+			try {
+				Globals.messages = [];
+
+				for (const i in this.extensions) {
+					const extension = this.extensions[i];
+					Globals.spinner.suffixText = chalk.gray(
+						`(${Number.parseInt(i) + 1}/${
+							this.extensions.length
+						} - ${extension.id})`
+					);
+					await extension.finalize();
+				}
+				Globals.spinner.suffixText = '';
+				Globals.spinner.succeed(
+					`${chalk.green(
+						`Added ${this.extensions.length} extensions from`
+					)} ${chalk.blueBright(this.name)} ${chalk.gray(
+						this.getGalleryTypeText()
+					)}`
+				);
+				Globals.messages.forEach((message) => {
+					console.log(`${message}`);
+				});
+			} catch (e) {
+				Globals.spinner.suffixText = '';
+				Globals.spinner.fail(
+					chalk.redBright(
+						`Failed to add ${
+							this.extensions.length
+						} extensions from ${this.name} ${chalk.gray(
+							this.getGalleryTypeText()
+						)}`
+					)
+				);
+				Globals.messages.forEach((message) => {
+					console.log(`${message}`);
+				});
+				reject(
+					`Failed to add ${this.extensions.length} extensions from ${this.name}. ${e}`
+				);
+			}
+			resolve();
+		});
+	}
+
+	/**
+	 * Adds the gallery metadata to the `galleries.json` file
 	 * @returns {Promise<void>}
 	 */
 	async addToGalleryJson() {
@@ -2204,22 +702,22 @@ class PenguinModGalleryExtensionData {
 		return new Promise(async (resolve, reject) => {
 			/** @type {ExtensionGalleryMetaData[]} */
 			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			json.find((gallery) => {
-				return gallery.name === this.gallery.name;
-			}).extensions.push({
-				...this.metadata,
-				...ExtensionData.extendedData[this.id],
-				banner: this.banner,
-				featured: this.featured,
+			json.push({
+				id: this.id,
+				name: this.name,
+				icon: this.icon,
+				smallIcon: this.smallIcon,
+				viewLocation: this.viewLocation,
+				extensions: [],
 			});
 			await BuildHelper.write(
 				extensionsJson,
 				JSON.stringify(json),
 				'utf-8'
 			);
-			ExtensionData.messages.push(
+			Globals.messages.push(
 				`${chalk.gray('added metadata for')} ${chalk.blueBright(
-					this.id
+					this.name
 				)}`
 			);
 			resolve();
@@ -2233,25 +731,15 @@ class PenguinModGalleryExtensionData {
 	async moveFilesToBuild() {
 		return new Promise(async (resolve, reject) => {
 			try {
-				await BuildHelper.copy(
-					path.resolve(
-						BuildHelper.prebuildDirectory,
-						`extension-data/code/${this.gallery.id}/${this.id}.js`
-					),
-					path.resolve(
-						BuildHelper.getClientBuildDir(),
-						`gallery/extensions/code/${this.gallery.id}/${this.id}.js`
-					)
-				);
-				if (this.metadata.banner != undefined)
+				if (this.icon != undefined)
 					await BuildHelper.copy(
 						path.resolve(
 							BuildHelper.prebuildDirectory,
-							`extension-data/banner/${this.gallery.id}/${this.id}.${this.banner}`
+							`extension-data/galleries/${this.id}.${this.icon}`
 						),
 						path.resolve(
 							BuildHelper.getClientBuildDir(),
-							`gallery/extensions/banner/${this.gallery.id}/${this.id}.${this.banner}`
+							`gallery/galleries/${this.id}.${this.icon}`
 						)
 					);
 			} catch (e) {

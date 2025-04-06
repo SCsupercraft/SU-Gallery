@@ -6,6 +6,18 @@ import { BuildHelper } from './helper.mjs';
 import { Chalk } from 'chalk';
 const chalk = new Chalk();
 
+/**
+ * @typedef {Object} Plugin
+ * @property {(prebuildDirectory: string) => Promise<void>} initialize
+ * @property {(prebuildDirectory: string, buildDirectory: string) => Promise<void>} finalize
+ */
+
+/**
+ * @typedef {Object} Config
+ * @property {Plugin[]} plugins
+ * @property {import("./grab.mjs").GrabConfig} [grab]
+ */
+
 await initializeBuild();
 const exitCode = await build();
 if (exitCode != 0) {
