@@ -62,17 +62,6 @@ export default {
 
 				replacements: [
 					{ type: 'removal', replacement: 'penguingpt.pn' },
-					/*{
-						type: 'addition',
-						replacement: {
-							name: 'PenguinGPT',
-							description:
-								"Using WorkingTurboGPT's source code, we made PenguinGPT! New features will come like DALL-E, etc, all for free!",
-							url: 'https://raw.githubusercontent.com/PenguinMod/PenguinMod-ExtensionsGallery/refs/heads/main/static/extensions/MubiLop/penguingpt.js',
-							thumb: 'https://ruby-devs.vercel.app/cdn/thumbnails/penguingpt.png',
-							recommended: true,
-						},
-					},*/
 				],
 			},
 			{

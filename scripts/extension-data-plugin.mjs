@@ -164,7 +164,10 @@ export class ExtensionDataPlugin {
 						BuildHelper.getClientBuildDir(),
 						'gallery/extensions/galleries.json'
 					),
-					'[]',
+					JSON.stringify({
+						lastUpdated: Date.now(),
+						data: [],
+					}),
 					'utf-8'
 				);
 				for (const i in this.galleries) {

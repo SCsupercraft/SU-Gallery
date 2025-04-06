@@ -20,13 +20,13 @@ export async function clientLoader({ params }: Route.ClientLoaderArgs) {
 			`${config.basename}gallery/extensions/galleries.json`
 		);
 		if (!response.ok) {
-			return new ExtensionManager([]);
+			return new ExtensionManager({ lastUpdated: -1, data: [] });
 		}
 		const data = await response.json();
 		return new ExtensionManager(data);
 	} catch (error) {
 		console.error(error);
-		return new ExtensionManager([]);
+		return new ExtensionManager({ lastUpdated: -1, data: [] });
 	}
 }
 

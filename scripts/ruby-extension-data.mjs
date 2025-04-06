@@ -133,16 +133,18 @@ export class RubyExtensionData extends ExtensionData {
 			'gallery/extensions/galleries.json'
 		);
 		return new Promise(async (resolve, reject) => {
-			/** @type {import("./extension-data.mjs").ExtensionGalleryMetaData[]} */
+			/** @type {import("./extension-data.mjs").ExtensionJson} */
 			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			json.find((gallery) => {
-				return gallery.name === this.gallery.name;
-			}).extensions.push({
-				...this.metadata,
-				...Globals.extendedData[this.id],
-				banner: this.banner,
-				featured: this.featured,
-			});
+			json.data
+				.find((gallery) => {
+					return gallery.name === this.gallery.name;
+				})
+				.extensions.push({
+					...this.metadata,
+					...Globals.extendedData[this.id],
+					banner: this.banner,
+					featured: this.featured,
+				});
 			await BuildHelper.write(
 				extensionsJson,
 				JSON.stringify(json),

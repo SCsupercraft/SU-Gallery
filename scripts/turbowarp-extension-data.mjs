@@ -113,17 +113,18 @@ export class TurbowarpExtensionData extends ExtensionData {
 			'gallery/extensions/galleries.json'
 		);
 		return new Promise(async (resolve, reject) => {
-			/** @type {import("./extension-data.mjs").ExtensionGalleryMetaData[]} */
+			/** @type {import("./extension-data.mjs").ExtensionJson} */
 			const json = JSON.parse(await fs.readFile(extensionsJson, 'utf-8'));
-			const parsed = {
-				...(await parseMetaData(this.id, this.gallery.id)),
-				...Globals.extendedData[this.id],
-				banner: this.banner,
-				featured: this.featured,
-			};
-			json.find((gallery) => {
-				return gallery.name === this.gallery.name;
-			}).extensions.push(parsed);
+			json.data
+				.find((gallery) => {
+					return gallery.name === this.gallery.name;
+				})
+				.extensions.push({
+					...(await parseMetaData(this.id, this.gallery.id)),
+					...Globals.extendedData[this.id],
+					banner: this.banner,
+					featured: this.featured,
+				});
 			await BuildHelper.write(
 				extensionsJson,
 				JSON.stringify(json),
