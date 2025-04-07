@@ -393,11 +393,17 @@ function Gallery({
 	galleries: string[];
 }) {
 	const [open, setOpen] = React.useState(false);
-	const [galleryName, setGalleryName] = React.useState(params.gallery);
+	const [galleryName, setGalleryName] = React.useState(
+		galleries
+			.filter(
+				(gallery) =>
+					gallery.toLowerCase() === params.gallery.toLowerCase()
+			)
+			.pop() || ''
+	);
 
-	useEffect(() => {
+	if (galleryName != params.gallery)
 		setParams({ ...params, gallery: galleryName });
-	}, [galleryName]);
 
 	return (
 		<div className="inline-block h-full align-middle">
