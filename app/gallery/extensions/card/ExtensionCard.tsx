@@ -42,11 +42,16 @@ export function ExtensionGrid({
 		<div className="flex rounded-3xl p-4 border border-gray-200 dark:border-gray-700 justify-center">
 			<p className="text-sm">
 				<TriangleAlert
-					className="me-3 -mt-0.5 inline-flex text-amber-500"
-					size={16}
+					className="ms-2 me-2 -mt-0.5 inline-flex text-amber-500"
+					size={18}
 					aria-hidden="true"
 				/>
 				This feature is currently unavailable!
+				<TriangleAlert
+					className="ms-2 me-2 -mt-0.5 inline-flex text-amber-500"
+					size={18}
+					aria-hidden="true"
+				/>
 			</p>
 		</div>
 	) : (
