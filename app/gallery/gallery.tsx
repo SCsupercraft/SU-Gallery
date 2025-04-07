@@ -23,11 +23,14 @@ export function Gallery({
 						size={18}
 						aria-hidden="true"
 					/>
-					<br />
-					{extensionManager.lastUpdated != -1 &&
-						`Last updated ${new Date(
-							extensionManager.lastUpdated
-						).toLocaleDateString()}`}
+					{extensionManager.lastUpdated != -1 && (
+						<>
+							<br />
+							{`Last updated ${new Date(
+								extensionManager.lastUpdated
+							).toLocaleDateString()}`}
+						</>
+					)}
 				</p>
 			</div>
 			<nav className="rounded-3xl p-6 border border-gray-200 dark:border-gray-700 space-y-4">
@@ -44,6 +47,7 @@ export function Gallery({
 					All Extensions
 				</p>
 				<SearchableExtensionGrid
+					useUrlSearchParams={true}
 					extensionManager={extensionManager}
 					className="dynamic-grid gap-x-12 gap-y-12"
 				/>

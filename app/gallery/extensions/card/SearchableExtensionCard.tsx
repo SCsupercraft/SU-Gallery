@@ -46,20 +46,66 @@ type SearchParams = {
 	showDupes: boolean;
 };
 
-export function SearchableExtensionGrid({
-	extensionManager,
-	className,
-}: {
-	extensionManager: ExtensionManager;
-	className: string;
-}) {
-	const [params, setParams] = useState<SearchParams>({
+function getDefaultParamsFromURL(searchParams: URLSearchParams): SearchParams {
+	return {
+		query: searchParams.has('q') ? searchParams.get('q')! : '',
+		author: searchParams.has('a') ? searchParams.get('a')! : '',
+		gallery: searchParams.has('g') ? searchParams.get('g')! : '',
+		includeDescription: searchParams.has('d'),
+		showDupes: searchParams.has('m'),
+	};
+}
+
+function getDefaultParams(): SearchParams {
+	return {
 		query: '',
 		author: '',
 		gallery: '',
 		includeDescription: false,
 		showDupes: false,
-	});
+	};
+}
+
+export function SearchableExtensionGrid({
+	useUrlSearchParams,
+	extensionManager,
+	className,
+}: {
+	useUrlSearchParams: boolean;
+	extensionManager: ExtensionManager;
+	className: string;
+}) {
+	const [params, setParams] = useState<SearchParams>(
+		useUrlSearchParams
+			? getDefaultParamsFromURL(
+					new URLSearchParams(window.location.search)
+			  )
+			: getDefaultParams()
+	);
+
+	useEffect(() => {
+		if (!useUrlSearchParams) return;
+
+		const url = new URL(window.location.href);
+		const searchParams = url.searchParams;
+
+		if (params.query != '') searchParams.set('q', params.query);
+		else searchParams.delete('q');
+
+		if (params.author != '') searchParams.set('a', params.author);
+		else searchParams.delete('a');
+
+		if (params.gallery != '') searchParams.set('g', params.gallery);
+		else searchParams.delete('g');
+
+		if (params.includeDescription) searchParams.set('d', '');
+		else searchParams.delete('d');
+
+		if (params.showDupes) searchParams.set('m', '');
+		else searchParams.delete('m');
+
+		window.history.pushState(null, '', url);
+	}, [params]);
 
 	const extensions = extensionManager.getExtensions();
 	const filteredExtensions = extensions.filter((extension) =>
@@ -71,11 +117,16 @@ export function SearchableExtensionGrid({
 		<div className="flex rounded-3xl p-4 border border-gray-200 dark:border-gray-700 justify-center">
 			<p className="text-sm">
 				<TriangleAlert
-					className="me-3 -mt-0.5 inline-flex text-amber-500"
-					size={16}
+					className="ms-2 me-2 -mt-0.5 inline-flex text-amber-500"
+					size={18}
 					aria-hidden="true"
 				/>
 				This feature is currently unavailable!
+				<TriangleAlert
+					className="ms-2 me-2 -mt-0.5 inline-flex text-amber-500"
+					size={18}
+					aria-hidden="true"
+				/>
 			</p>
 		</div>
 	) : (
@@ -259,7 +310,13 @@ function Author({
 	authors: string[];
 }) {
 	const [open, setOpen] = React.useState(false);
-	const [authorName, setAuthorName] = React.useState('');
+	const [authorName, setAuthorName] = React.useState(
+		authors
+			.filter(
+				(author) => author.toLowerCase() === params.author.toLowerCase()
+			)
+			.pop() || ''
+	);
 
 	useEffect(() => {
 		setParams({ ...params, author: authorName });
@@ -297,7 +354,8 @@ function Author({
 										value={author}
 										onSelect={(currentValue: string) => {
 											setAuthorName(
-												currentValue === authorName
+												currentValue.toLowerCase() ===
+													authorName.toLowerCase()
 													? ''
 													: currentValue
 											);
@@ -308,7 +366,8 @@ function Author({
 										<Check
 											className={cn(
 												'ml-auto',
-												authorName === author
+												authorName.toLowerCase() ===
+													author.toLowerCase()
 													? 'opacity-100'
 													: 'opacity-0'
 											)}
@@ -334,7 +393,7 @@ function Gallery({
 	galleries: string[];
 }) {
 	const [open, setOpen] = React.useState(false);
-	const [galleryName, setGalleryName] = React.useState('');
+	const [galleryName, setGalleryName] = React.useState(params.gallery);
 
 	useEffect(() => {
 		setParams({ ...params, gallery: galleryName });
