@@ -1,7 +1,4 @@
 import type { Route } from './+types/licenses';
-import { Gallery as GalleryPage } from '~/pages/gallery/gallery';
-import { ExtensionManager } from '~/data/extensions';
-import { config } from '~/data/config';
 import { Suspense } from 'react';
 import { MarkdownPage } from '~/pages/markdown/MarkdownPage';
 import { getLicenseText } from '~/data/licenses';
@@ -36,6 +33,12 @@ export default function Gallery({ loaderData }: Route.ComponentProps) {
 
 	if (params.has('credits'))
 		text = text?.replaceAll('[CREDITS]', params.get('credits')!);
+
+	if (params.has('name'))
+		text = text?.replaceAll('[NAME]', params.get('name')!);
+
+	if (params.has('description'))
+		text = text?.replaceAll('[DESCRIPTION]', params.get('description')!);
 
 	return (
 		<Suspense fallback={<Fallback />}>

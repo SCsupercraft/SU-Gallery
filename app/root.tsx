@@ -66,7 +66,6 @@ export default function App() {
 					Copyright &#169; {new Date().getFullYear()} SCsupercraft.
 					Licensed under the{' '}
 					<a
-						className="text-blue-400"
 						href="https://github.com/SCsupercraft/SU-Gallery/blob/main/LICENSE"
 						target="_blank"
 						rel="noreferrer noopener nofollow"
