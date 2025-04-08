@@ -1,10 +1,11 @@
 import { ExtensionDataPlugin } from './extension-data-plugin.mjs';
+import { GithubPlugin } from './github-plugin.mjs';
 
 /**
  * @type {import("./build.mjs").Config}
  */
 export default {
-	plugins: [ExtensionDataPlugin],
+	plugins: [ExtensionDataPlugin, GithubPlugin],
 	grab: {
 		galleries: [
 			{
