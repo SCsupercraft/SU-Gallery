@@ -30,7 +30,7 @@ export class GithubPlugin {
 		return new Promise(async (resolve, reject) => {
 			if (process.env.dev == 'true') return;
 			try {
-				BuildHelper.copy(
+				await BuildHelper.copy(
 					path.resolve(BuildHelper.getClientBuildDir(), 'index.html'),
 					path.resolve(BuildHelper.getClientBuildDir(), '404.html')
 				);
