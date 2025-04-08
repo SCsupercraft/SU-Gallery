@@ -1,5 +1,5 @@
 import type { Route } from './+types/gallery';
-import { Gallery as GalleryPage } from '~/gallery/gallery';
+import { GalleryPage } from '~/pages/gallery/gallery';
 import { ExtensionManager } from '~/data/extensions';
 import { config } from '~/data/config';
 import { Suspense } from 'react';
@@ -9,7 +9,7 @@ export function meta({}: Route.MetaArgs): Route.MetaDescriptors {
 		{ title: 'Gallery' },
 		{
 			name: 'description',
-			content: 'Welcome to the Scratch Ultimate Gallery!',
+			content: 'Welcome to the Scratch Ultimate Extension Gallery!',
 		},
 	];
 }

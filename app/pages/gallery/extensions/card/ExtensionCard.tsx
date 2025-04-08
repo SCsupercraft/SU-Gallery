@@ -15,8 +15,12 @@ import {
 	TooltipProvider,
 	TooltipTrigger,
 } from '@/components/ui/tooltip';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+
+import { supportedLicenses } from '~/data/licenses';
+import { NavLink } from 'react-router';
 
 export function ExtensionGrid({
 	extensionManager,
@@ -98,7 +102,9 @@ export function ExtensionCard({
 			<ExtensionInfo
 				name={extension.name}
 				description={extension.description}
+				credits={extension.credits}
 				license={extension.license}
+				extensionManager={extensionManager}
 			/>
 			<ExtensionCredits credits={extension.credits} />
 		</div>
@@ -308,19 +314,43 @@ function ExtensionSecondaryInfo({
 function ExtensionInfo({
 	name,
 	description,
+	credits,
 	license,
+	extensionManager,
 }: {
 	name: string;
 	description: string;
+	credits: ExtensionCreditsType;
 	license?: string;
+	extensionManager: ExtensionManager;
 }) {
+	const licenseParams = new URLSearchParams();
+	licenseParams.set(
+		'year',
+		new Date(extensionManager.lastUpdated).getFullYear().toString()
+	);
+	licenseParams.set('credits', getLicenseCreditsText(credits));
+
 	return (
 		<div className="p-5">
 			<p className="pb-1 text-2xl">{name}</p>
 			<p className="pb-1 text-1xl">{description}</p>
 			{license && (
 				<p className="pb-1 text-1xl">
-					Licensed under the {license} license.
+					Licensed under the{' '}
+					{license.split(' ').map((part) =>
+						supportedLicenses.includes(part.toUpperCase()) ? (
+							<NavLink
+								to={`/licenses/${part.toUpperCase()}?${licenseParams.toString()}`}
+								className="text-blue-400"
+							>
+								{part + ' '}
+							</NavLink>
+						) : (
+							part + ' '
+						)
+					)}
+					license.
 				</p>
 			)}
 		</div>
@@ -367,36 +397,109 @@ function ExtensionSingleBadge({
 }
 
 function ExtensionCredits({ credits }: { credits: ExtensionCreditsType }) {
+	const Creators = credits.filter((credit) => credit.type == 'creator');
+	const OriginalCreators = credits.filter(
+		(credit) => credit.type == 'originalCreator'
+	);
+
+	let creators = 0;
+	let originalCreators = 0;
 	return (
-		<p className="p-5 pt-0">
-			{credits.map((author) => {
-				return (
-					<ExtensionAuthor
-						author={author}
-						key={author.name}
-					/>
-				);
-			})}
-		</p>
+		<>
+			<p className="pl-5 pr-5">
+				{Creators.map((credit) => {
+					const flag1 = creators == 0;
+					const flag2 =
+						Creators[Creators.length - 1].name == credit.name;
+					const flag3 = !flag2;
+
+					creators++;
+
+					let prefix = '';
+					let suffix = '';
+
+					if (flag1)
+						prefix = ' ' + AuthorTypeUtil.asString(credit.type);
+					else if (flag2) prefix = ' and';
+					if (flag3) suffix = ',';
+
+					return (
+						<span key={credit.name}>
+							{prefix}{' '}
+							{credit.link != undefined ? (
+								<a
+									className="text-blue-400"
+									href={credit.link}
+									target="_blank"
+									rel="noreferrer noopener nofollow"
+								>
+									{credit.name + suffix}
+								</a>
+							) : (
+								credit.name + suffix
+							)}
+						</span>
+					);
+				})}
+			</p>
+			<p className="p-5 pt-0">
+				{OriginalCreators.map((credit) => {
+					const flag1 = originalCreators == 0;
+					const flag2 =
+						OriginalCreators[OriginalCreators.length - 1].name ==
+						credit.name;
+					const flag3 = !flag2;
+
+					originalCreators++;
+
+					let prefix = '';
+					let suffix = '';
+
+					if (flag1)
+						prefix = ' ' + AuthorTypeUtil.asString(credit.type);
+					else if (flag2) prefix = ' and';
+					if (flag3) suffix = ',';
+
+					return (
+						<span key={credit.name}>
+							{prefix}{' '}
+							{credit.link != undefined ? (
+								<a
+									className="text-blue-400"
+									href={credit.link}
+									target="_blank"
+									rel="noreferrer noopener nofollow"
+								>
+									{credit.name + suffix}
+								</a>
+							) : (
+								credit.name + suffix
+							)}
+						</span>
+					);
+				})}
+			</p>
+		</>
 	);
 }
 
-function ExtensionAuthor({ author }: { author: ExtensionAuthorType }) {
-	return (
-		<>
-			{AuthorTypeUtil.asString(author.type)}{' '}
-			{author.link != undefined ? (
-				<a
-					className="text-blue-400"
-					href={author.link}
-					target="_blank"
-					rel="noreferrer noopener nofollow"
-				>
-					{author.name}
-				</a>
-			) : (
-				author.name
-			)}{' '}
-		</>
-	);
+export function getLicenseCreditsText(credits: ExtensionCreditsType) {
+	const Creators = credits.filter((credit) => credit.type == 'creator');
+
+	let creators = 0;
+	return Creators.reduce((text, credit) => {
+		const flag1 = creators == 0;
+		const flag2 = Creators[Creators.length - 1].name == credit.name;
+		const flag3 = !flag2;
+
+		creators++;
+
+		let prefix = '';
+		let suffix = '';
+
+		if (!flag1 && flag2) prefix = ' and';
+		if (flag3) suffix = ',';
+
+		return text + prefix + ' ' + credit.name + suffix;
+	}, '');
 }
