@@ -100,10 +100,7 @@ export function ExtensionCard({
 				extensionManager={extensionManager}
 			/>
 			<ExtensionInfo
-				name={extension.name}
-				description={extension.description}
-				credits={extension.credits}
-				license={extension.license}
+				extension={extension}
 				extensionManager={extensionManager}
 			/>
 			<ExtensionCredits credits={extension.credits} />
@@ -204,7 +201,9 @@ function ExtensionPopup({
 
 		const clipboard = navigator.clipboard;
 		await clipboard.writeText(
-			`${window.location.origin}${config.basename}gallery/extensions/code/${Gallery?.id}/${id}.js`
+			`${window.location.origin}${
+				config.basename
+			}gallery/extensions/code/${Gallery!.id}/${id}.js`
 		);
 	};
 	const copyCode = async () => {
@@ -312,24 +311,32 @@ function ExtensionSecondaryInfo({
 }
 
 function ExtensionInfo({
-	name,
-	description,
-	credits,
-	license,
+	extension,
 	extensionManager,
 }: {
-	name: string;
-	description: string;
-	credits: ExtensionCreditsType;
-	license?: string;
+	extension: Extension;
 	extensionManager: ExtensionManager;
 }) {
+	const { id, name, description, gallery, credits, license } = extension;
+	const Gallery = extensionManager.getGallery(gallery);
+
 	const licenseParams = new URLSearchParams();
 	licenseParams.set(
 		'year',
 		new Date(extensionManager.lastUpdated).getFullYear().toString()
 	);
 	licenseParams.set('credits', getLicenseCreditsText(credits));
+	licenseParams.set(
+		'name',
+		Gallery
+			? `<a href="${window.location.origin}${
+					config.basename
+			  }gallery/extensions/code/${
+					Gallery!.id
+			  }/${id}.js" target="_blank" rel="noreferrer noopener nofollow">${name}</a>`
+			: name
+	);
+	licenseParams.set('description', description);
 
 	return (
 		<div className="p-5">
@@ -465,7 +472,6 @@ function ExtensionCredits({ credits }: { credits: ExtensionCreditsType }) {
 							{prefix}{' '}
 							{credit.link != undefined ? (
 								<a
-									className="text-blue-400"
 									href={credit.link}
 									target="_blank"
 									rel="noreferrer noopener nofollow"
@@ -500,6 +506,10 @@ export function getLicenseCreditsText(credits: ExtensionCreditsType) {
 		if (!flag1 && flag2) prefix = ' and';
 		if (flag3) suffix = ',';
 
-		return text + prefix + ' ' + credit.name + suffix;
+		const creditText = credit.name + suffix;
+
+		return text + prefix + ' ' + credit.link
+			? `<a href="${credit.link}" target="_blank" rel="noreferrer noopener nofollow">${creditText}</a>`
+			: creditText;
 	}, '');
 }
