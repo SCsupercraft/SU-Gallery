@@ -129,3 +129,11 @@ body {
 		@apply bg-background text-foreground;
 	}
 }
+
+.markdown {
+	width: min(1500px, 90%);
+}
+
+.markdown > * {
+	text-align: center;
+}

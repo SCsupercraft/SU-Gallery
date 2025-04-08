@@ -3,7 +3,7 @@ import { ExtensionGrid } from './extensions/card/ExtensionCard';
 import { SearchableExtensionGrid } from './extensions/card/SearchableExtensionCard';
 import { TriangleAlert } from 'lucide-react';
 
-export function Gallery({
+export function GalleryPage({
 	extensionManager,
 }: {
 	extensionManager: ExtensionManager;
