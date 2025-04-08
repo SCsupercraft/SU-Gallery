@@ -508,8 +508,13 @@ export function getLicenseCreditsText(credits: ExtensionCreditsType) {
 
 		const creditText = credit.name + suffix;
 
-		return text + prefix + ' ' + credit.link
-			? `<a href="${credit.link}" target="_blank" rel="noreferrer noopener nofollow">${creditText}</a>`
-			: creditText;
+		return (
+			text +
+			prefix +
+			' ' +
+			(credit.link != undefined
+				? `<a href="${credit.link}" target="_blank" rel="noreferrer noopener nofollow">${creditText}</a>`
+				: creditText)
+		);
 	}, '');
 }

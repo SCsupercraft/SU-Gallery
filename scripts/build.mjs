@@ -1,5 +1,6 @@
 import { spawn } from 'node:child_process';
 import * as path from 'node:path';
+import Environment from 'dotenv';
 import config from './build.config.mjs';
 import { BuildHelper } from './helper.mjs';
 
@@ -17,6 +18,8 @@ const chalk = new Chalk();
  * @property {Plugin[]} plugins
  * @property {import("./grab.mjs").GrabConfig} [grab]
  */
+
+Environment.configDotenv();
 
 await initializeBuild();
 const exitCode = await build();
