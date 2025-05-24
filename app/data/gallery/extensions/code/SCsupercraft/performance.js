@@ -3,6 +3,7 @@
 // Description: View your project's performance in simple graphs.
 // By: SCsupercraft <https://github.com/SCsupercraft>
 // License: MIT
+// Badge: Alpha - This extension is a work in progress! You may encounter bugs.
 
 /*
 
