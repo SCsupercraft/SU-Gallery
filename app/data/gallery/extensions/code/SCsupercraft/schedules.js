@@ -3,11 +3,6 @@
 // Description: Schedule code to run at a later date. Might be useful if two operations can't be run at the same time.
 // By: SCsupercraft <https://github.com/SCsupercraft>
 // License: MIT
-// Badge: Alpha - This extension is a work in progress! You may encounter bugs.
-
-/*
-	Note: This extension is not functional and is still in development, do not use.
-*/
 
 ((Scratch) => {
 	'use strict';
@@ -16,12 +11,7 @@
 		throw new Error('Schedules must be run unsandboxed to work properly!');
 	}
 
-	const vm = Scratch.vm;
-	const runtime = vm.runtime;
-
 	const BlockType = Scratch.BlockType;
-	const ArgumentType = Scratch.ArgumentType;
-	const Cast = Scratch.Cast;
 
 	/**
 	 * Legal characters for the unique ID.
@@ -59,40 +49,87 @@
 				color1: '#e3685f',
 				blocks: [
 					{
-						opcode: 'schedule',
+						blockType: BlockType.BUTTON,
+						text: 'Help',
+						func: 'helpButton',
+					},
+					{
+						blockType: BlockType.BUTTON,
+						text: 'Reset',
+						func: 'resetButton',
+					},
+					'---',
+					{
+						opcode: 'resetSchedules',
+						blockType: BlockType.COMMAND,
+						text: 'reset schedules',
+					},
+					{
+						opcode: 'awaitSchedule',
 						blockType: BlockType.CONDITIONAL,
-						text: 'schedule',
+						text: ['schedule', 'and wait'],
 						branchCount: 1,
 					},
 				],
 			};
 		}
 
-		removeSchedule(id) {
-			this.schedules.splice(this.schedules.indexOf(id), 1);
+		helpButton() {
+			window.alert(
+				"The schedule block allows you to make sure that two scripts don't run at the same time." +
+					'\n\nThis could be useful with extensions such as the ZIP extension by CST1229, as you can only read and write to one archive at once.' +
+					'\n\nThe reset block will cancel any existing schedules and should only be used if a schedule was canceled before finishing execution. ' +
+					'For example, if the project was stopped while a schedule was running.'
+			);
 		}
 
-		async waitUntilScheduled(id) {
-			return new Promise((resolve) => {
-				const n = setInterval(() => {
-					if (this.schedules[0] === id) {
-						console.log(this.schedules, id);
-						clearInterval(n);
-						resolve();
-					}
-				}, 5);
-			});
+		resetButton() {
+			if (
+				window.confirm(
+					'Are you sure? ' +
+						'This will cancel any existing schedules and should only be used if a schedule was canceled before finishing execution. ' +
+						'For example, if the project was stopped while a schedule was running.'
+				)
+			)
+				this.schedules = [];
 		}
 
-		async schedule(args, util) {
-			const id = uid();
-			this.schedules.push(id);
+		resetSchedules() {
+			this.schedules = [];
+		}
 
-			await this.waitUntilScheduled(id);
-			// FIXME: This starts the branch, but doesn't wait until it's finished.
-			// 	We need to somehow wait until the branch has finished before declaring the schedule as finished.
-			util.startBranch(1, false);
-			this.removeSchedule(id);
+		awaitSchedule(_, util) {
+			let currentId = util.stackFrame.id; // Get current schedule id. (possibly undefined)
+
+			// Check if the schedules have been reset.
+			if (currentId != undefined && !this.schedules.includes(currentId)) {
+				throw new Error('Schedules have been reset!');
+			}
+
+			// Check if the scheduled code has been executed.
+			if (util.stackFrame.hasFinished == true) {
+				this.schedules.shift(); // Remove the current schedule from the queue, allowing the next schedule to run.
+				return;
+			}
+
+			// Check if the schedule hasn't been initialized.
+			if (currentId == undefined) {
+				currentId = uid();
+				util.stackFrame.id = currentId;
+
+				this.schedules.push(currentId); // Add the schedule to the queue.
+			}
+
+			// Check if it is our turn to run. (first in queue)
+			if (this.schedules[0] === currentId) {
+				util.stackFrame.hasFinished = true; // Tell the next run that the schedule finished.
+				util.startBranch(1, true); // Start the scheduled code, we pass true so that this function we be called again once the code has been executed.
+				return;
+			}
+
+			// Cause this function to be called again as we have still not started the scheduled code.
+			// util.stackFrame won't change, so we can access data from this run.
+			util.yield();
 		}
 	}
 
