@@ -1,0 +1,11 @@
+{
+	"name": "Schedules",
+	"description": "Schedule code to run at a later date. Might be useful if two operations can't be run at the same time.",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "SCsupercraft",
+			"link": "https://github.com/SCsupercraft/"
+		}
+	]
+}

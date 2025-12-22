@@ -1,0 +1,17 @@
+{
+	"name": "Debugging",
+	"description": "Log information and run commands. Good for debugging packaged projects or just easily changing things.",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "SCsupercraft",
+			"link": "https://github.com/SCsupercraft/"
+		}
+	],
+	"originalAuthors": [
+		{
+			"name": "JeremyGamer13",
+			"link": "https://github.com/JeremyGamer13/"
+		}
+	]
+}

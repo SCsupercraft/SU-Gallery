@@ -3,10 +3,9 @@ import Environment from 'dotenv';
 import process from 'node:process';
 import { config } from './app/data/config';
 
-Environment.configDotenv();
+Environment.configDotenv({ quiet: true });
 
-const rrConfig: Config = {};
-rrConfig.ssr = process.env.dev == 'true' ? true : false;
-rrConfig.basename = config.basename;
-
-export default rrConfig;
+export default {
+	ssr: process.env.dev == 'true' ? true : false,
+	basename: config.basename,
+} satisfies Config;

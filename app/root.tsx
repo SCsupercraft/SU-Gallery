@@ -9,7 +9,9 @@ import {
 
 import type { Route } from './+types/root';
 import './app.css';
-import { Label } from './ui/components/ui/label';
+import { Label } from '~/components/ui/label';
+import { Toaster } from 'sonner';
+import { config } from './data/config';
 
 export const links: Route.LinksFunction = () => [
 	{ rel: 'preconnect', href: 'https://fonts.googleapis.com' },
@@ -33,6 +35,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 					name="viewport"
 					content="width=device-width, initial-scale=1"
 				/>
+				<link
+					rel="icon"
+					href={config.basename + 'favicon.png'}
+				/>
 				<Meta />
 				<Links />
 			</head>
@@ -40,6 +46,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
 				{children}
 				<ScrollRestoration />
 				<Scripts />
+				<Toaster
+					richColors
+					theme="system"
+				/>
 			</body>
 		</html>
 	);
@@ -47,7 +57,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
 	return (
-		<div className="relative flex flex-col min-h-[100%] w-full">
+		<div className="relative flex flex-col min-h-full w-full">
 			<main
 				className="flex items-center justify-center"
 				style={{ paddingBottom: 'calc(var(--spacing) * 4 + 60px)' }}
@@ -62,9 +72,9 @@ export default function App() {
 				</div>
 			</main>
 			<footer className="absolute bottom-0 flex flex-col items-center gap-9 h-[60px] w-full dark:bg-gray-900 bg-gray-100 justify-center">
-				<p>
+				<p className="text-center">
 					Copyright &#169; {new Date().getFullYear()} SCsupercraft.
-					Licensed under the{' '}
+					Website licensed under the{' '}
 					<a
 						href="https://github.com/SCsupercraft/SU-Gallery/blob/main/LICENSE"
 						target="_blank"
@@ -73,6 +83,8 @@ export default function App() {
 						MIT
 					</a>{' '}
 					license.
+					<br />
+					Images & individual extensions may have separate licenses.
 				</p>
 			</footer>
 		</div>
@@ -83,6 +95,7 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 	let message = 'Oops!';
 	let details = 'An unexpected error occurred.';
 	let stack: string | undefined;
+	let causes: string[] = [];
 
 	if (isRouteErrorResponse(error)) {
 		message = error.status === 404 ? '404' : 'Error';
@@ -93,6 +106,17 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 	} else if (import.meta.env.DEV && error && error instanceof Error) {
 		details = error.message;
 		stack = error.stack;
+
+		let current: unknown = (error as any).cause;
+		while (current) {
+			if (current instanceof Error) {
+				causes.push(current.message);
+				current = (current as any).cause;
+			} else {
+				causes.push(String(current));
+				break;
+			}
+		}
 	}
 
 	return (
@@ -103,6 +127,16 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 				<pre className="w-full p-4 overflow-x-auto">
 					<code>{stack}</code>
 				</pre>
+			)}
+			{causes.length > 0 && (
+				<div>
+					<h2>Caused by:</h2>
+					<ul className="pl-4 list-none list-inside">
+						{causes.map((c, i) => (
+							<p key={i}>{c}</p>
+						))}
+					</ul>
+				</div>
 			)}
 		</main>
 	);

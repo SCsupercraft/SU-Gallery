@@ -1,0 +1,13 @@
+{
+	"name": "Prim Utilities",
+	"description": "Powerful blocks for working with prime numbers.",
+	"badges": [
+		{
+			"name": "External",
+			"tooltip": "This extension was taken from another gallery",
+			"link": "https://m0v0.github.io/Website/"
+		}
+	],
+	"supports": ["tw"],
+	"maySupport": ["pm", "em"]
+}
