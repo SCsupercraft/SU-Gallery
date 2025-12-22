@@ -1,7 +1,23 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
-import { BuildHelper } from './helper.mjs';
 import fs from 'node:fs/promises';
+
+async function exists(path) {
+	return new Promise(async (resolve, reject) => {
+		await fs
+			.stat(path)
+			.then(async (stat) => {
+				resolve(true);
+			})
+			.catch(async (e) => {
+				if (e.code === 'ENOENT') {
+					resolve(false);
+				} else {
+					reject(e);
+				}
+			});
+	});
+}
 
 async function spawnProcess(command) {
 	return new Promise((resolve) => {
