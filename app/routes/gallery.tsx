@@ -1,8 +1,7 @@
+import { GalleryPage } from '~/pages/gallery/gallery-page';
 import type { Route } from './+types/gallery';
-import { GalleryPage } from '~/pages/gallery/gallery';
-import { ExtensionManager } from '~/data/extensions';
-import { config } from '~/data/config';
 import { Suspense } from 'react';
+import { GalleryProvider } from '~/components/context/galleryContext';
 
 export function meta({}: Route.MetaArgs): Route.MetaDescriptors {
 	return [
@@ -14,26 +13,12 @@ export function meta({}: Route.MetaArgs): Route.MetaDescriptors {
 	];
 }
 
-export async function clientLoader({ params }: Route.ClientLoaderArgs) {
-	try {
-		const response = await fetch(
-			`${config.basename}gallery/extensions/galleries.json`
-		);
-		if (!response.ok) {
-			return new ExtensionManager({ lastUpdated: -1, data: [] });
-		}
-		const data = await response.json();
-		return new ExtensionManager(data);
-	} catch (error) {
-		console.error(error);
-		return new ExtensionManager({ lastUpdated: -1, data: [] });
-	}
-}
-
 export default function Gallery({ loaderData }: Route.ComponentProps) {
 	return (
 		<Suspense fallback={<Fallback />}>
-			<GalleryPage extensionManager={loaderData} />
+			<GalleryProvider>
+				<GalleryPage />
+			</GalleryProvider>
 		</Suspense>
 	);
 }

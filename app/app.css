@@ -2,9 +2,9 @@
 @config "../tailwind.config.js";
 
 @theme {
-	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif,
-		'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
-		'Noto Color Emoji';
+	--font-sans:
+		'Inter', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+		'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
 }
 
 @layer base {
@@ -137,10 +137,6 @@ a {
 
 .markdown {
 	width: min(1500px, 90%);
-}
-
-.markdown > * {
-	text-align: center;
 }
 
 .markdown > h1 {

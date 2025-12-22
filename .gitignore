@@ -1,11 +1,11 @@
 .DS_Store
-/node_modules/
 .env
+/node_modules/
 
 # React Router
 /.react-router/
 /build/
 
 # Gallery
-/scripts/.galleries.json
-/scripts/.build/
+/public/gallery/
+/scripts/scripts-build/
