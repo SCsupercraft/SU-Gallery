@@ -9,7 +9,7 @@
 		"typecheck": "react-router typegen && tsc",
 		"scripts:build-scripts": "tsc --project ./scripts/tsconfig.json",
 		"scripts:build": "node scripts/scripts-build/build.js",
-		"scripts:installDeps": "node scripts/scripts-build/installDeps.js"
+		"scripts:installDeps": "node scripts/installDeps.mjs"
 	},
 	"dependencies": {
 		"@radix-ui/react-avatar": "^1.1.11",
