@@ -1,6 +1,5 @@
 import { supportedLicenses } from '~/pages/license/license-page';
 import { useMemo, type ReactNode } from 'react';
-import { Link, NavLink } from 'react-router';
 import { config } from '~/data/config';
 
 export function ExtensionLicense({ licenseString }: { licenseString: string }) {
@@ -10,7 +9,7 @@ export function ExtensionLicense({ licenseString }: { licenseString: string }) {
 			.split(' ')
 			.filter((s) => s.length != 0)
 			.map((s, i) => (
-				<>
+				<span key={s}>
 					{i == 0 ? '' : ' '}
 					{supportedLicenses.includes(s.toUpperCase()) ? (
 						<a
@@ -23,7 +22,7 @@ export function ExtensionLicense({ licenseString }: { licenseString: string }) {
 					) : (
 						s
 					)}
-				</>
+				</span>
 			));
 	}, [licenseString]);
 

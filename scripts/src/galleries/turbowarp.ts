@@ -219,7 +219,7 @@ class TurboWarpExtension {
 				`${this.extensionId}.${this.bannerExtension}`
 			);
 			if (!(await BuildHelper.exists(bannerFile)))
-				throw `Failed to find extension banner! Expected the file '${codeFile}' to exist.`;
+				throw `Failed to find extension banner! Expected the file '${bannerFile}' to exist.`;
 		}
 	}
 

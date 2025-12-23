@@ -221,7 +221,7 @@ class MistiumExtension {
 				`${this.extensionId}.${this.bannerExtension}`
 			);
 			if (!(await BuildHelper.exists(bannerFile)))
-				throw `Failed to find extension banner! Expected the file '${codeFile}' to exist.`;
+				throw `Failed to find extension banner! Expected the file '${bannerFile}' to exist.`;
 		} else logger(chalk.yellow(`missing banner for ${this.extensionId}`));
 	}
 
