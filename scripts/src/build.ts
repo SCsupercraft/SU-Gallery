@@ -74,13 +74,7 @@ const tasks = new Listr(
 									typeof SimpleRenderer
 								>
 							): Promise<void> => {
-								const attempt = task.isRetrying()
-									? chalk.yellowBright(
-											` [RETRY:${task.isRetrying()?.count}]`
-										)
-									: '';
-
-								task.title = `Supported Mod Icons${attempt} - Configuring`;
+								task.title = `Supported Mod Icons - Configuring`;
 								const collection =
 									new RemoteDownloadTaskCollection();
 
@@ -107,16 +101,14 @@ const tasks = new Listr(
 										}
 									);
 								}
-
-								await collection.start(
-									(title) =>
-										(task.title = `Supported Mod Icons ${attempt} - ${title}`)
-								);
 								task.title = 'Supported Mod Icons';
+								await collection.start(
+									(title) => (task.output = title)
+								);
 							},
 							rendererOptions: {
-								outputBar: Infinity,
-								persistentOutput: true,
+								outputBar: 5,
+								persistentOutput: false,
 							},
 						},
 						...ctx.galleries
@@ -132,27 +124,20 @@ const tasks = new Listr(
 											typeof SimpleRenderer
 										>
 									): Promise<void> => {
-										const attempt = task.isRetrying()
-											? chalk.yellowBright(
-													` [RETRY:${task.isRetrying()?.count}]`
-												)
-											: '';
-
-										task.title = `${gallery.name()}${attempt} - Configuring`;
+										task.title = `${gallery.name()} - Configuring`;
 										const collection =
 											new RemoteDownloadTaskCollection();
 										await gallery.downloadRemote(
 											collection
 										);
-										await collection.start(
-											(title) =>
-												(task.title = `${gallery.name()}${attempt} - ${title}`)
-										);
 										task.title = gallery.name();
+										await collection.start(
+											(title) => (task.output = title)
+										);
 									},
 									rendererOptions: {
-										outputBar: Infinity,
-										persistentOutput: true,
+										outputBar: 5,
+										persistentOutput: false,
 									},
 									retry: 3,
 								};
