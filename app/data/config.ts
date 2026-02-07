@@ -1,5 +1,5 @@
 import type { Config } from '../types/config';
 
 export const config = {
-	basename: '/SU-Gallery/',
+  basename: '/SU-Gallery/',
 } satisfies Config;
