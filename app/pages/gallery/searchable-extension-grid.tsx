@@ -329,9 +329,14 @@ function Toggles({
                 )}
               </TooltipTrigger>
               <TooltipContent>
-                {params.strictSupport
-                  ? `Click to include all extensions that might support the mod`
-                  : `Click to only include extensions that will support the mod`}
+                {params.strictSupport ? (
+                  <>
+                    Click to include all extensions that <em>should</em> support
+                    the mod
+                  </>
+                ) : (
+                  `Click to only include extensions that will support the mod`
+                )}
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
