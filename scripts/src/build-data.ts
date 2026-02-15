@@ -14,7 +14,6 @@ export type Data = {
     GalleryJSON_ExtensionLocation,
     GalleryJSON_ExtensionLocation,
   ];
-  duplicates: GalleryJSON_ExtensionLocation[];
   authorsAlias: AuthorAlias[];
   githubPages: boolean;
 };

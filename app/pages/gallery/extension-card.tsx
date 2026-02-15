@@ -147,7 +147,7 @@ function ExtensionGallery({
       <div
         className={`w-[15%] aspect-square flex ${
           Gallery.smallIcon ? 'px-1' : ''
-        } rounded-full overflow-clip pointer-events-auto bg-gray-900 border border-gray-700`}
+        } rounded-full overflow-clip pointer-events-auto bg-gray-900 border border-gray-700 flex justify-center align-center`}
       >
         <TooltipProvider>
           <Tooltip>

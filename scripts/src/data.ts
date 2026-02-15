@@ -6,6 +6,7 @@ import { PenPlusExtensionGallery } from './galleries/pen_plus.js';
 import { PenguinModExtensionGallery } from './galleries/penguinmod.js';
 import { PooiodExtensionGallery } from './galleries/pooiod.js';
 import { RubyExtensionGallery } from './galleries/ruby.js';
+import { SurvExtensionGallery } from './galleries/surv-is-a-dev.js';
 import { TurboWarpExtensionGallery } from './galleries/turbowarp.js';
 
 export const data: Data = {
@@ -98,6 +99,17 @@ export const data: Data = {
       },
       [
         {
+          type: 'duplicate',
+          extensionId: [
+            // PenguinMod gallery
+            'cloudlink',
+
+            // Pen+ Gallery
+            'penplus',
+            'obviousAlexC/penPlus',
+          ],
+        },
+        {
           type: 'addSupportedMod',
           id: 'tw',
         },
@@ -137,12 +149,21 @@ export const data: Data = {
         {
           type: 'duplicate',
           extensionId: [
-            // These are all in Pooiod's gallery!
+            // Pooiod's gallery
             'pooiod/Box2D',
             'pooiod/Dictation',
             'pooiod/Scratchblocks',
             'pooiod/VideoSharing',
             'pooiod/WindowHasher',
+
+            // Pen+ gallery.
+            'ObviousAlexC/PenPlus',
+
+            // Ruby gallery.
+            'RubyDevs/turboweather',
+
+            // Miyo's gallery
+            'Ashime/MoreFields',
           ],
         },
       ],
@@ -159,6 +180,10 @@ export const data: Data = {
         smallIcon: true,
       },
       [
+        {
+          type: 'duplicate',
+          extensionId: 'penguinhook', // PenguinMod gallery
+        },
         {
           type: 'remove',
           extensionId: 'penguingpt.pn',
@@ -227,7 +252,30 @@ export const data: Data = {
           'https://raw.githubusercontent.com/BludIsAnLemon/lemons-gallery/refs/heads/main/favicon/favicon.png',
         smallIcon: false,
       },
-      [],
+      [
+        {
+          type: 'duplicate',
+          extensionId: 'hello-world', // Placeholder extension
+        },
+      ],
+    ),
+    new SurvExtensionGallery(
+      {
+        id: 'miyo',
+        name: "Miyo's Gallery",
+        sourceLocation:
+          'https://raw.githubusercontent.com/surv-is-a-dev/gallery/refs/heads/main/',
+        viewLocation: 'https://github.com/surv-is-a-dev/gallery/tree/main',
+        iconUrl: 'https://avatars.githubusercontent.com/u/135030944?v=4',
+        iconExtension: 'png',
+        smallIcon: false,
+      },
+      [
+        {
+          type: 'duplicate',
+          extensionId: 'Placeholder', // Placeholder extension
+        },
+      ],
     ),
   ],
   featured: [
@@ -235,17 +283,6 @@ export const data: Data = {
     { galleryId: 'pm', extensionId: 'Div/divIterators' },
     { galleryId: 'tw', extensionId: 'gamejolt' },
     { galleryId: 'pen_plus', extensionId: 'PenP' },
-  ],
-  duplicates: [
-    {
-      galleryId: 'tw',
-      extensionId: 'cloudlink',
-    },
-    { galleryId: 'ruby', extensionId: 'penguinhook' },
-    { galleryId: 'tw', extensionId: 'penplus' },
-    { galleryId: 'tw', extensionId: 'obviousAlexC/penPlus' },
-    { galleryId: 'pm', extensionId: 'ObviousAlexC/PenPlus' },
-    { galleryId: 'pm', extensionId: 'RubyDevs/turboweather' },
   ],
   authorsAlias: [
     {

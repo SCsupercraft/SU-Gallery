@@ -229,15 +229,7 @@ const tasks = new Listr(
         const knownExtensions: Set<string> = new Set();
         for (const gallery of ctx.json.galleries) {
           for (const extension of gallery.extensions) {
-            if (
-              knownExtensions.has(extension.id) ||
-              data.duplicates.find(
-                (loc) =>
-                  loc.galleryId === gallery.id &&
-                  loc.extensionId === extension.id,
-              ) != undefined
-            )
-              extension.duplicate = true;
+            if (knownExtensions.has(extension.id)) extension.duplicate = true;
             knownExtensions.add(extension.id);
 
             for (const author of extension.authors) {
