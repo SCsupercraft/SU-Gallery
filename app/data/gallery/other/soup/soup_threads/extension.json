@@ -1,0 +1,14 @@
+{
+  "name": "Threads",
+  "description": "Take full control of the sequencer so you can fix all of those pesky one-frame-off bugs.",
+  "license": "MIT",
+  "authors": [{ "name": "soup", "link": "https://github.com/the-can-of-soup" }],
+  "badges": [
+    {
+      "name": "External",
+      "tooltip": "This extension was taken from a github repository and may not be up-to-date",
+      "link": "https://github.com/the-can-of-soup/pm_threads/blob/main/soup_threads.js"
+    }
+  ],
+  "supports": ["pm"]
+}
