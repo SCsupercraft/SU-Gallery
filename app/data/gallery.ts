@@ -18,20 +18,17 @@ export class ExtensionManager {
   constructor(data: JsonSchema) {
     this.lastUpdated = data.lastUpdated;
 
-    const isFeatured = (galleryId: string, extensionId: string) => {
+    const isFeatured = (gallery: string, extension: string) => {
       for (const featured of data.featured) {
-        if (
-          featured.galleryId == galleryId &&
-          featured.extensionId == extensionId
-        )
+        if (featured.gallery == gallery && featured.extension == extension)
           return true;
       }
       return false;
     };
 
     try {
-      for (const mod of data.supportedMods) {
-        this.supportedMods[mod.id] = mod;
+      for (const entry of Object.entries(data.mods)) {
+        this.supportedMods[entry[0]] = entry[1];
       }
 
       const galleries = data.galleries.map((gallery) => {
@@ -86,18 +83,15 @@ export class ExtensionManager {
       this.authors = filteredAuthors;
 
       const get = (featured: JsonSchemaFeaturedExtension) => {
-        const gallery = this.getGalleryFromId(featured.galleryId);
+        const gallery = this.getGalleryFromId(featured.gallery);
 
         if (!gallery)
-          throw `Failed to find gallery with id '${featured.galleryId}'`;
+          throw `Failed to find gallery with id '${featured.gallery}'`;
 
-        const extension = this.getExtensionFromId(
-          gallery,
-          featured.extensionId,
-        );
+        const extension = this.getExtensionFromId(gallery, featured.extension);
 
         if (!extension)
-          throw `Failed to find extension with id '${featured.extensionId}' in gallery with id '${featured.galleryId}'`;
+          throw `Failed to find extension with id '${featured.extension}' in gallery with id '${featured.gallery}'`;
 
         return extension;
       };

@@ -4,6 +4,7 @@ import {
   type Badge as ExtensionBadge,
   type Extension,
   type Version,
+  type Files,
 } from '~/types/extension';
 import { config } from '~/data/config';
 
@@ -66,14 +67,13 @@ export function ExtensionCard({
     <div className="extension border-3 dark:border-gray-800 border-gray-300 rounded-3xl shadow-xl dark:shadow-gray-900 shadow-gray-200 overflow-hidden relative">
       <ExtensionBanner
         id={extension.id}
-        banner={extension.bannerExtension}
+        banner={extension.banner}
         gallery={extension.gallery}
         extensionManager={extensionManager}
       />
       <ExtensionPopup
         id={extension.id}
-        mainVersion={extension.mainVersion}
-        versions={extension.versions}
+        files={extension.files}
         gallery={extension.gallery}
         extensionManager={extensionManager}
       />
@@ -111,12 +111,12 @@ function ExtensionBanner({
     <div className="w-full aspect-2/1 overflow-clip extension-img">
       <img
         src={
-          banner == undefined || Gallery == undefined
-            ? `${config.basename}gallery/extensions/banner/unknown.svg`
-            : `${config.basename}gallery/extensions/banner/${Gallery.id}/${id}.${banner}`
+          banner == undefined
+            ? `${config.basename}unknown-extension.svg`
+            : banner
         }
         className="w-full h-full object-cover opacity-100"
-      ></img>
+      />
     </div>
   );
 }
@@ -133,13 +133,9 @@ function ExtensionGallery({
 
   const Img = () => (
     <img
-      src={
-        Gallery == undefined || !Gallery.iconExtension
-          ? `${config.basename}gallery/galleries/unknown.svg`
-          : `${config.basename}gallery/galleries/${Gallery.id}.${Gallery.iconExtension}`
-      }
       className="w-full aspect-square block"
-    ></img>
+      src={Gallery.iconLocation}
+    />
   );
 
   return (
@@ -174,10 +170,12 @@ function ExtensionGallery({
 
 function ExtensionPopupUnversioned({
   id,
+  location,
   gallery,
   extensionManager,
 }: {
   id: string;
+  location: string;
   gallery: string;
   extensionManager: ExtensionManager;
 }) {
@@ -186,11 +184,7 @@ function ExtensionPopupUnversioned({
     if (!Gallery) return;
 
     const clipboard = navigator.clipboard;
-    await clipboard.writeText(
-      `${window.location.origin}${
-        config.basename
-      }gallery/extensions/code/${Gallery!.id}/${id}.js`,
-    );
+    await clipboard.writeText(location);
 
     toast.success('Copied to clipboard!', {
       description: 'Copied the extension URL to clipboard',
@@ -200,11 +194,7 @@ function ExtensionPopupUnversioned({
     const Gallery = extensionManager.getGallery(gallery);
     if (!Gallery) return;
 
-    const code = await (
-      await fetch(
-        `${config.basename}gallery/extensions/code/${Gallery.id}/${id}.js`,
-      )
-    ).text();
+    const code = await (await fetch(location)).text();
 
     const clipboard = navigator.clipboard;
     await clipboard.writeText(code);
@@ -238,11 +228,7 @@ function ExtensionPopupUnversioned({
           ],
         });
 
-        const code = await (
-          await fetch(
-            `${config.basename}gallery/extensions/code/${Gallery.id}/${id}.js`,
-          )
-        ).text();
+        const code = await (await fetch(location)).text();
 
         const writable = await fileHandle.createWritable();
         await writable.write(code);
@@ -311,7 +297,7 @@ function ExtensionPopupVersioned({
   const [open, setOpen] = useState<boolean>(false);
   const [currentVersion, setCurrentVersion] = useState<Version>(
     mainVersion
-      ? versions.find((v) => v.foldername === mainVersion) || versions[0]
+      ? versions.find((v) => v.name === mainVersion) || versions[0]
       : versions[0],
   );
 
@@ -320,13 +306,7 @@ function ExtensionPopupVersioned({
     if (!Gallery) return;
 
     const clipboard = navigator.clipboard;
-    await clipboard.writeText(
-      `${window.location.origin}${
-        config.basename
-      }gallery/extensions/code/${Gallery!.id}/${id}/${currentVersion.foldername}/${id.substring(
-        id.lastIndexOf('/') + 1,
-      )}.js`,
-    );
+    await clipboard.writeText(currentVersion.location);
 
     toast.success('Copied to clipboard!', {
       description: 'Copied the extension URL to clipboard',
@@ -336,13 +316,7 @@ function ExtensionPopupVersioned({
     const Gallery = extensionManager.getGallery(gallery);
     if (!Gallery) return;
 
-    const code = await (
-      await fetch(
-        `${config.basename}gallery/extensions/code/${Gallery.id}/${id}/${currentVersion.foldername}/${id.substring(
-          id.lastIndexOf('/') + 1,
-        )}.js`,
-      )
-    ).text();
+    const code = await (await fetch(currentVersion.location)).text();
 
     const clipboard = navigator.clipboard;
     await clipboard.writeText(code);
@@ -376,13 +350,7 @@ function ExtensionPopupVersioned({
           ],
         });
 
-        const code = await (
-          await fetch(
-            `${config.basename}gallery/extensions/code/${Gallery.id}/${id}/${currentVersion.foldername}/${id.substring(
-              id.lastIndexOf('/') + 1,
-            )}.js`,
-          )
-        ).text();
+        const code = await (await fetch(currentVersion.location)).text();
 
         const writable = await fileHandle.createWritable();
         await writable.write(code);
@@ -456,7 +424,7 @@ function ExtensionPopupVersioned({
                 <CommandGroup>
                   {versions.map((version) => (
                     <CommandItem
-                      key={version.foldername}
+                      key={version.name}
                       value={version.name}
                       onSelect={(currentValue: string) => {
                         setCurrentVersion(version);
@@ -467,8 +435,8 @@ function ExtensionPopupVersioned({
                       <Check
                         className={cn(
                           'ml-auto',
-                          currentVersion.foldername.toLowerCase() ===
-                            version.foldername.toLowerCase()
+                          currentVersion.name.toLowerCase() ===
+                            version.name.toLowerCase()
                             ? 'opacity-100'
                             : 'opacity-0',
                         )}
@@ -487,28 +455,27 @@ function ExtensionPopupVersioned({
 
 function ExtensionPopup({
   id,
-  mainVersion,
-  versions,
+  files,
   gallery,
   extensionManager,
 }: {
   id: string;
-  mainVersion?: string;
-  versions?: Version[];
+  files: Files;
   gallery: string;
   extensionManager: ExtensionManager;
 }) {
-  return versions == undefined ? (
+  return !files.versioned ? (
     <ExtensionPopupUnversioned
       id={id}
+      location={files.location}
       gallery={gallery}
       extensionManager={extensionManager}
     />
   ) : (
     <ExtensionPopupVersioned
       id={id}
-      mainVersion={mainVersion}
-      versions={versions}
+      mainVersion={files.mainVersion}
+      versions={files.versions}
       gallery={gallery}
       extensionManager={extensionManager}
     />
@@ -605,9 +572,9 @@ function ExtensionSupportedMods({
     const mod = extensionManager.getSupportedMod(id)!;
     const Img = () => (
       <img
-        src={`${config.basename}gallery/mods/${mod.id}.${mod.iconExtension}`}
         className="w-full aspect-square block"
-      ></img>
+        src={mod.iconLocation}
+      />
     );
     return (
       <div
@@ -659,7 +626,7 @@ function ExtensionSupportedMods({
               <a
                 key={id}
                 className="text-blue-400! text-sm"
-                href={mod.link}
+                href={mod.viewLocation}
                 target="_blank"
                 rel="noreferrer noopener nofollow"
               >
@@ -680,7 +647,7 @@ function ExtensionSupportedMods({
               <a
                 key={id}
                 className="text-blue-400! text-sm"
-                href={mod.link}
+                href={mod.viewLocation}
                 target="_blank"
                 rel="noreferrer noopener nofollow"
               >

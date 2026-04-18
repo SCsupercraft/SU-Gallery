@@ -9,7 +9,7 @@ export type ExtensionGallery = {
 
 export type JsonSchema = {
   lastUpdated: number;
-  supportedMods: JsonSchemaSupportedMod[];
+  mods: Record<string, JsonSchemaSupportedMod>;
   featured: [
     JsonSchemaFeaturedExtension,
     JsonSchemaFeaturedExtension,
@@ -20,46 +20,55 @@ export type JsonSchema = {
 };
 
 export type JsonSchemaSupportedMod = {
-  id: string;
   name: string;
-  link: string;
-  iconExtension: string;
+  viewLocation: string;
+  iconLocation: string;
   smallIcon: boolean;
 };
 
 export type JsonSchemaFeaturedExtension = {
-  galleryId: string;
-  extensionId: string;
+  gallery: string;
+  extension: string;
 };
 
 export type JsonSchemaExtensionGallery = {
   id: string;
   name: string;
-  iconExtension?: string;
+  viewLocation?: string;
+  iconLocation: string;
   smallIcon: boolean;
   extensions: JsonSchemaExtension[];
-  viewLocation?: string;
 };
 
 export type JsonSchemaExtension = {
   id: string;
   name: string;
   description: string;
+  license?: string;
   authors: Author[];
   originalAuthors: Author[];
   badges: Badge[];
   supports: string[];
   maySupport: string[];
   duplicate: boolean;
-  versions?: Version[];
-  mainVersion?: string;
-  license?: string;
-  bannerExtension?: string;
+  files: Files;
+  banner?: string;
 };
+
+export type Files =
+  | {
+      versioned: true;
+      versions: Version[];
+      mainVersion: string;
+    }
+  | {
+      versioned: false;
+      location: string;
+    };
 
 export type Version = {
   name: string;
-  foldername: string;
+  location: string;
 };
 
 export type Author = {
