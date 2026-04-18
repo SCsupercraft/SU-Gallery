@@ -1,272 +1,471 @@
-import {
-  DefaultRenderer,
-  delay,
-  Listr,
-  PRESET_TIMER,
-  SimpleRenderer,
-  type ListrTaskWrapper,
-} from 'listr2';
+import { Listr, PRESET_TIMER, type ListrTask } from 'listr2';
 import { execaCommand as command } from 'execa';
+import Environment from 'dotenv';
 import chalk from 'chalk';
 
-import Environment from 'dotenv';
-import {
-  RemoteDownloadTaskCollection,
-  type ExtensionGallery,
-  type GalleryJSON,
-} from './extension-gallery.js';
-import { data } from './data.js';
 import path from 'node:path';
-import { BuildHelper } from './helper.js';
+import { fs } from './fs.js';
+import {
+  GalleryConfigSchema,
+  type GalleryConfig,
+  type ProgressReporter,
+} from './config.js';
+import { config } from './site.js';
 Environment.configDotenv({ quiet: true });
 
+export type Author = {
+  /**
+   * The name of the author.
+   */
+  name: string;
+
+  /**
+   * A link to one of the author's profiles.
+   */
+  link?: string;
+};
+
+export type Badge = {
+  /**
+   * The name of the badge.
+   */
+  name: string;
+
+  /**
+   * The text to show when the badge is hovered over.
+   */
+  tooltip?: string;
+
+  /**
+   * A link to redirect users to when the badge is clicked.
+   */
+  link?: string;
+};
+
+export type Version = {
+  /**
+   * This version's display name.
+   */
+  name: string;
+
+  /**
+   * The location of the extension's code for this version.
+   */
+  location: string;
+};
+
+export type Files =
+  | {
+      /**
+       * Whether the extension is versioned.
+       */
+      versioned: true;
+
+      /**
+       * A list of available versions.
+       */
+      versions: Version[];
+
+      /**
+       * The main version, selected by default.
+       */
+      mainVersion: string;
+    }
+  | {
+      /**
+       * Whether the extension is versioned.
+       */
+      versioned: false;
+
+      /**
+       * The location of the extension's code.
+       */
+      location: string;
+    };
+
+export type GeneratedExtension = {
+  /**
+   * The name of the extension.
+   */
+  name: string;
+
+  /**
+   * The short id for this extension,
+   * used in URLs and for locating extensions.
+   */
+  id: string;
+
+  /**
+   * The description of the extension.
+   */
+  description: string;
+
+  /**
+   * The extension's license.
+   */
+  license?: string;
+
+  /**
+   * The authors of the extension.
+   */
+  authors: Author[];
+
+  /**
+   * The original authors of the extension.
+   */
+  originalAuthors: Author[];
+
+  /**
+   * The badges to display for the extension.
+   */
+  badges: Badge[];
+
+  /**
+   * An array of Scratch mods that this extension will work on.
+   */
+  supports: string[];
+
+  /**
+   * An array of Scratch mods that this extension might work on.
+   */
+  maySupport: string[];
+
+  /**
+   * Whether the extension is a duplicate.
+   */
+  duplicate: boolean;
+
+  /**
+   * The extension's files.
+   */
+  files: Files;
+
+  /**
+   * The location of the extension's banner.
+   */
+  banner?: string;
+};
+
+export type GeneratedGallery = {
+  /**
+   * The name of the gallery.
+   */
+  name: string;
+
+  /**
+   * The short id for this gallery,
+   * used in URLs and for locating extensions.
+   */
+  id: string;
+
+  /**
+   * A location to redirect users to.
+   */
+  viewLocation?: string;
+
+  /**
+   * The location of the gallery's icon.
+   */
+  iconLocation: string;
+
+  /**
+   * Whether the icon should be scaled down to fit within GUIs.
+   */
+  smallIcon: boolean;
+
+  /**
+   * The extensions in this gallery.
+   */
+  extensions: GeneratedExtension[];
+};
+
 interface BuildContext {
-  galleries: ExtensionGallery<any, any>[];
-  json: GalleryJSON;
+  galleries: GalleryConfig[];
+  generated: GeneratedGallery[];
 }
 
-BuildHelper.publicDirectory = path.resolve('./public/');
-BuildHelper.galleryDirectory = path.resolve('./public/gallery');
-
-const tasks = new Listr(
+const tasks = new Listr<BuildContext>(
   [
     {
-      title: 'Refresh Extension List',
-      task: (ctx: BuildContext, task): Listr => {
-        ctx.json.lastUpdated = Date.now();
-        return task.newListr(
-          [
-            ...ctx.galleries.map((gallery) => {
-              return {
-                title: gallery.name(),
-                task: async (ctx: BuildContext, task: any) => {
-                  await gallery.refresh(
-                    (message: string) => (task.output = message),
-                  );
-                },
-                rendererOptions: {
-                  outputBar: Infinity,
-                  persistentOutput: true,
-                },
-              };
-            }),
-          ],
-          {},
-        );
-      },
-      rendererOptions: {
-        bottomBar: Infinity,
+      title: 'Clean Directories',
+      task: async (ctx, task): Promise<void> => {
+        await fs.cleanDir(path.resolve('./public/gallery'));
       },
     },
     {
-      title: 'Download Assets',
-      task: (ctx: BuildContext, task): Listr => {
-        return task.newListr(
-          [
-            {
-              title: 'Supported Mod Icons',
-              task: async (
-                ctx: BuildContext,
-                task: ListrTaskWrapper<
-                  BuildContext,
-                  typeof DefaultRenderer,
-                  typeof SimpleRenderer
-                >,
-              ): Promise<void> => {
-                task.title = `Supported Mod Icons - Configuring`;
-                const collection = new RemoteDownloadTaskCollection();
+      title: 'Discover Galleries',
+      task: async (ctx, task): Promise<void> => {
+        const galleries = path.resolve('./scripts/scripts-build/galleries');
+        const files = await fs.readDir(galleries);
 
-                for (const mod of data.supportedMods) {
-                  const extension = mod.iconExtension
-                    ? mod.iconExtension
-                    : mod.iconUrl.substring(mod.iconUrl.lastIndexOf('.') + 1);
+        for (const file of files) {
+          if (!file.endsWith('.js')) continue;
 
-                  collection.addDownloadTask(mod.iconUrl, async (response) => {
-                    const imgContent = await response.blob();
-                    await BuildHelper.write(
-                      path.resolve(
-                        BuildHelper.galleryDirectory,
-                        `mods/${mod.id}.${extension}`,
-                      ),
-                      await imgContent.bytes(),
-                      'utf-8',
-                    );
-                  });
-                }
-                task.title = 'Supported Mod Icons';
-                await collection.start((title) => (task.output = title));
-              },
-              rendererOptions: {
-                outputBar: 5,
-                persistentOutput: false,
-              },
-            },
-            ...ctx.galleries
-              .filter((gallery) => gallery.isRemote())
-              .map((gallery) => {
-                return {
-                  title: gallery.name(),
-                  task: async (
-                    ctx: BuildContext,
-                    task: ListrTaskWrapper<
-                      BuildContext,
-                      typeof DefaultRenderer,
-                      typeof SimpleRenderer
-                    >,
-                  ): Promise<void> => {
-                    task.title = `${gallery.name()} - Configuring`;
-                    const collection = new RemoteDownloadTaskCollection();
-                    await gallery.downloadRemote(collection);
-                    task.title = gallery.name();
-                    await collection.start((title) => (task.output = title));
-                  },
-                  rendererOptions: {
-                    outputBar: 5,
-                    persistentOutput: false,
-                  },
-                  retry: 3,
-                };
-              }),
-          ],
-          {},
-        );
-      },
-      rendererOptions: {
-        bottomBar: Infinity,
-      },
-    },
-    {
-      title: 'Validate Assets',
-      task: (ctx: BuildContext, task): Listr => {
-        return task.newListr(
-          [
-            {
-              title: 'Supported Mod Icons',
-              task: async (ctx: BuildContext, task) => {
-                for (const mod of ctx.json.supportedMods) {
-                  const iconFile = path.resolve(
-                    BuildHelper.galleryDirectory,
-                    `mods/${mod.id}.${mod.iconExtension}`,
-                  );
-                  if (!(await BuildHelper.exists(iconFile)))
-                    throw `Failed to find mod icon! Expected the file '${iconFile}' to exist.`;
-                }
-              },
-              rendererOptions: {
-                outputBar: Infinity,
-                persistentOutput: true,
-              },
-            },
-            ...ctx.galleries.map((gallery) => {
-              return {
-                title: gallery.name(),
-                task: async (ctx: BuildContext, task: any) => {
-                  await gallery.validateAssets(
-                    (message: string) => (task.output = message),
-                  );
-                },
-                rendererOptions: {
-                  outputBar: Infinity,
-                  persistentOutput: true,
-                },
-              };
-            }),
-          ],
-          {},
-        );
-      },
-      rendererOptions: {
-        outputBar: Infinity,
-        persistentOutput: true,
-      },
-    },
-    {
-      title: 'Copy Assets',
-      task: async (ctx: BuildContext, task): Promise<Listr> => {
-        await BuildHelper.copy(
-          path.resolve('./app/data/gallery/', 'unknown-extension.svg'),
-          path.resolve(
-            BuildHelper.galleryDirectory,
-            'extensions/banner/unknown.svg',
-          ),
-        );
-        await BuildHelper.copy(
-          path.resolve('./app/data/gallery/', 'unknown-gallery.svg'),
-          path.resolve(BuildHelper.galleryDirectory, 'galleries/unknown.svg'),
-        );
-        return task.newListr(
-          [
-            ...ctx.galleries
-              .filter((gallery) => !gallery.isRemote())
-              .map((gallery) => {
-                return {
-                  title: gallery.name(),
-                  task: async (ctx: BuildContext, task: any) => {
-                    await gallery.copyFiles();
-                  },
-                  rendererOptions: {
-                    outputBar: Infinity,
-                    persistentOutput: true,
-                  },
-                };
-              }),
-          ],
-          {},
-        );
-      },
-      rendererOptions: {
-        outputBar: Infinity,
-        persistentOutput: true,
-      },
-    },
-    {
-      title: 'Generate Gallery JSON File',
-      task: async (ctx: BuildContext, task): Promise<void> => {
-        for (const gallery of ctx.galleries) {
-          ctx.json.galleries.push(gallery.generateJson());
+          const module = await import('./galleries/' + file);
+          const res = GalleryConfigSchema.safeParse(module.default);
+
+          if (res.success) {
+            ctx.galleries.push(res.data as GalleryConfig);
+
+            task.output =
+              'Discovered: ' +
+              chalk.green(res.data.name) +
+              chalk.gray(` (${res.data.id})`);
+            task.title = `Discover Galleries (${ctx.galleries.length})`;
+          } else
+            throw (
+              'Failed to load gallery from: ' + file + ': ' + res.error.message
+            );
         }
 
-        const knownExtensions: Set<string> = new Set();
-        for (const gallery of ctx.json.galleries) {
-          for (const extension of gallery.extensions) {
-            if (knownExtensions.has(extension.id)) extension.duplicate = true;
-            knownExtensions.add(extension.id);
+        ctx.galleries = ctx.galleries.sort((a, b) => {
+          if (a.priority < b.priority) return -1;
+          if (b.priority < a.priority) return 1;
+          return 0;
+        });
+      },
+      rendererOptions: {
+        outputBar: Infinity,
+        persistentOutput: true,
+      },
+    },
+    {
+      title: 'Validate',
+      task: async (ctx, task): Promise<void> => {
+        task.title = 'Validate (Mods)';
+        for (const mod of Object.entries(config.mods)) {
+          mod[1].name = mod[1].name.trim();
+          mod[1].viewLocation = mod[1].viewLocation.trim();
+          mod[1].iconLocation = mod[1].iconLocation.trim();
 
-            for (const author of extension.authors) {
-              const alias = data.authorsAlias.find(
-                (alias) =>
-                  alias.name === author.name ||
-                  alias.alias.includes(author.name),
-              );
+          const res = await fetch(mod[1].iconLocation);
+          if (!res.ok) throw 'Failed to fetch: ' + mod[1].iconLocation;
 
-              if (alias) {
-                author.name = alias.name;
-                if (alias.link) author.link = alias.link;
-              }
-            }
+          if (mod[0].match(/^[a-z_-]+$/) === null)
+            throw `Mod id must match the regex /^[a-z_-]+$/: ${mod[0]}`;
+        }
 
-            for (const author of extension.originalAuthors) {
-              const alias = data.authorsAlias.find(
-                (alias) =>
-                  alias.name === author.name ||
-                  alias.alias.includes(author.name),
-              );
+        task.title = 'Validate (Galleries)';
+        const galleryIcons = path.resolve(process.cwd(), 'public/galleries/');
+        for (const gallery of ctx.galleries) {
+          const sources = gallery.sources;
 
-              if (alias) {
-                author.name = alias.name;
-                if (alias.link) author.link = alias.link;
-              }
-            }
+          if (sources.iconLocation.type == 'remote') {
+            const res = await fetch(sources.iconLocation.url);
+            if (!res.ok) throw 'Failed to fetch: ' + sources.iconLocation.url;
+          } else {
+            const iconFile = path.resolve(
+              galleryIcons,
+              gallery.id + '.' + sources.iconLocation.extension,
+            );
+            if (!(await fs.exists(iconFile)))
+              throw 'Expected a file to exist at: ' + iconFile;
           }
         }
 
-        await BuildHelper.write(
-          path.resolve(BuildHelper.publicDirectory, 'gallery', 'data.json'),
-          JSON.stringify(ctx.json),
-          {
-            encoding: 'utf-8',
-          },
+        task.title = 'Validate';
+      },
+    },
+    {
+      title: 'Discover Extensions',
+      task: (ctx, rootTask): Listr => {
+        const galleryDir = path.resolve('./public/gallery/');
+        const tasks: ListrTask<BuildContext>[] = [];
+        let knownExtensions: string[] = [];
+        let count = 0;
+
+        for (const gallery of ctx.galleries) {
+          const title = `${gallery.name} ${chalk.gray(`(${gallery.id})`)}`;
+          tasks.push({
+            title,
+            task: async (ctx, task): Promise<void> => {
+              rootTask.title = `Discover Extensions (${count})`;
+
+              const _knownExtensions: string[] = [...knownExtensions];
+              const extensions: GeneratedExtension[] = [];
+              let _count = 0;
+
+              const createReporter: () => ProgressReporter = () => {
+                task.title = title;
+
+                let progress = 0;
+                let maxProgress = 0;
+
+                const setTitle = () => {
+                  const percentage = ((progress / maxProgress) * 100).toFixed(
+                    2,
+                  );
+                  task.title =
+                    title +
+                    chalk.yellow(
+                      ` [${percentage}% - ${progress}/${maxProgress}]`,
+                    );
+                };
+
+                return {
+                  increment(amount) {
+                    progress += amount;
+                    setTitle();
+                  },
+                  decrement(amount) {
+                    progress -= amount;
+                    setTitle();
+                  },
+                  setProgress(_progress) {
+                    progress = _progress;
+                    setTitle();
+                  },
+                  setMaxProgress(_progress) {
+                    maxProgress = _progress;
+                    setTitle();
+                  },
+                  getProgress() {
+                    return progress;
+                  },
+                  getMaxProgress() {
+                    return maxProgress;
+                  },
+                };
+              };
+
+              for (const source of gallery.extensions) {
+                task.output = chalk.cyan('Using: ') + chalk.gray(source.name());
+                await source.gatherExtensions(
+                  (ext) => {
+                    if (extensions.find((v) => v.id === ext.id) === undefined) {
+                      if (_knownExtensions.includes(ext.id))
+                        ext.duplicate = true;
+                      else _knownExtensions.push(ext.id);
+
+                      for (const author of [
+                        ...ext.authors,
+                        ...ext.originalAuthors,
+                      ]) {
+                        const alias = config.alias.authors.find(
+                          (alias) =>
+                            alias.name === author.name ||
+                            alias.otherNames.includes(author.name),
+                        );
+
+                        if (alias !== undefined) {
+                          author.name = alias.name;
+                          author.link = alias.link;
+                        }
+                      }
+
+                      extensions.push(ext);
+                      _count++;
+
+                      rootTask.title = `Discover Extensions (${count + _count})`;
+                    } else throw `Duplicate extension id: ${ext.id}`;
+                  },
+                  createReporter(),
+                  gallery,
+                  galleryDir,
+                );
+              }
+
+              task.title = title;
+              task.output = chalk.cyan(`Added ${extensions.length} extensions`);
+
+              ctx.generated.push({
+                name: gallery.name,
+                id: gallery.id,
+                viewLocation: gallery.sources.viewLocation,
+                iconLocation:
+                  gallery.sources.iconLocation.type == 'remote'
+                    ? gallery.sources.iconLocation.url
+                    : config.basename +
+                      'galleries/' +
+                      gallery.id +
+                      '.' +
+                      gallery.sources.iconLocation.extension,
+                smallIcon: gallery.sources.smallIcon,
+                extensions,
+              });
+
+              count += _count;
+              knownExtensions = _knownExtensions;
+            },
+            rendererOptions: {
+              outputBar: Infinity,
+              persistentOutput: true,
+            },
+            retry: {
+              tries: 5,
+              delay: 2000,
+            },
+          });
+        }
+
+        return rootTask.newListr(tasks, {});
+      },
+    },
+    {
+      title: 'Apply Modifications',
+      task: (ctx, rootTask): Listr => {
+        const tasks: ListrTask<BuildContext>[] = [];
+
+        for (const gallery of ctx.galleries) {
+          if (gallery.modifications.length === 0) continue;
+
+          const title = gallery.name;
+          tasks.push({
+            title,
+            task: async (ctx, task): Promise<void> => {
+              const generated = ctx.generated.find((g) => g.id === gallery.id)!;
+
+              for (const modification of gallery.modifications) {
+                task.output =
+                  chalk.cyan('Applying: ') + chalk.gray(modification.name());
+                modification.modify(gallery, generated);
+              }
+              task.output = chalk.cyan(
+                `Applied ${gallery.modifications.length} modification(s)`,
+              );
+            },
+            rendererOptions: {
+              outputBar: Infinity,
+              persistentOutput: true,
+            },
+          });
+        }
+
+        return rootTask.newListr(tasks, {});
+      },
+    },
+    {
+      title: 'Save Gallery JSON',
+      task: async (ctx, task): Promise<void> => {
+        const timestamp = Date.now();
+        const file = path.resolve('./public/gallery/data.json');
+        await fs.write(
+          file,
+          JSON.stringify({
+            lastUpdated: timestamp,
+            mods: config.mods,
+            galleries: ctx.generated,
+            featured: config.featured,
+          }),
         );
+
+        task.output = chalk.green('Saved gallery JSON to: ' + file);
+        task.output = chalk.cyan('Timestamp: ') + chalk.gray(timestamp);
+        task.output =
+          chalk.cyan('Mods: ') + chalk.gray(Object.keys(config.mods).length);
+        task.output =
+          chalk.cyan('Galleries: ') + chalk.gray(ctx.generated.length);
+        task.output =
+          chalk.cyan('Extensions: ') +
+          chalk.gray(
+            ctx.generated
+              .map((g) => g.extensions.length)
+              .reduce((p, c) => p + c, 0),
+          );
+      },
+      rendererOptions: {
+        outputBar: Infinity,
+        persistentOutput: true,
       },
     },
     {
@@ -278,26 +477,18 @@ const tasks = new Listr(
         buildProcess.stderr.pipe(task.stdout());
 
         await buildProcess;
+
+        if (config.static && process.env.dev != 'true') {
+          const dir = path.resolve('./build/client');
+          await fs.copy(
+            path.resolve(dir, 'index.html'),
+            path.resolve(dir, '404.html'),
+          );
+        }
       },
       rendererOptions: {
         bottomBar: Infinity,
       },
-    },
-    {
-      title: 'Create 404 Page (GitHub Pages)',
-      task: async (ctx, task): Promise<void> => {
-        const dir = path.resolve('./build/client');
-        await BuildHelper.copy(
-          path.resolve(dir, 'index.html'),
-          path.resolve(dir, '404.html'),
-        );
-        await delay(2000);
-      },
-      enabled: data.githubPages,
-      skip:
-        process.env.dev == 'true'
-          ? `Create 404 Page (GitHub Pages) ${chalk.dim('[skipped for dev environments]')}`
-          : false,
     },
   ],
   {
@@ -310,30 +501,13 @@ const tasks = new Listr(
   },
 );
 
-const ctx: BuildContext = {
-  galleries: data.galleries,
-  json: {
-    lastUpdated: -1,
-    supportedMods: data.supportedMods.map((mod) => {
-      const extension = mod.iconExtension
-        ? mod.iconExtension
-        : mod.iconUrl.substring(mod.iconUrl.lastIndexOf('.') + 1);
-      return {
-        id: mod.id,
-        name: mod.name,
-        link: mod.link,
-        iconExtension: extension,
-        smallIcon: mod.smallIcon,
-      };
-    }),
-    featured: data.featured,
-    galleries: [],
-  },
-};
-
 try {
-  await BuildHelper.preInitialization();
-  await tasks.run(ctx);
+  await tasks.run({
+    galleries: [],
+    generated: [],
+  });
+
+  console.log(chalk.green('\nSuccessfully built extension gallery!\n'));
 } catch (e) {
   console.error(chalk.red('\nFailed to build extension gallery!\n'), e);
 }
