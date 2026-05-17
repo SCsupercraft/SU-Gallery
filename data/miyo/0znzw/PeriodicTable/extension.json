@@ -1,0 +1,12 @@
+{
+  "name": "Periodic Table",
+  "description": "You can now get periodic table elements!",
+  "license": "MIT AND LGPL-3.0",
+  "bannerExtension": "svg",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ]
+}

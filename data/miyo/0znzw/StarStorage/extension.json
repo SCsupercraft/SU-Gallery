@@ -1,0 +1,11 @@
+{
+  "name": "* Storage",
+  "description": "LocalStorage, SessionStorage, IndexedDB and Cookies all in 1 extension.",
+  "license": "MIT AND LGPL-3.0",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ]
+}

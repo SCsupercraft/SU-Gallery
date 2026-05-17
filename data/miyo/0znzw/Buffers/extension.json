@@ -1,0 +1,12 @@
+{
+  "name": "Buffers",
+  "description": "Manipulate and read binary data.",
+  "license": "MIT AND LGPL-3.0",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ],
+  "badges": ["Advanced"]
+}

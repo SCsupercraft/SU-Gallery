@@ -1,0 +1,12 @@
+{
+  "name": "More Buttons",
+  "description": "Create your own buttons and manage the toolbox!",
+  "license": "MIT AND LGPL-3.0",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ],
+  "badges": ["Advanced"]
+}

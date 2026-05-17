@@ -1,0 +1,12 @@
+{
+  "name": "MimeDB",
+  "description": "Convert file types to their mime types and vice versa.",
+  "license": "MIT AND LGPL-3.0",
+  "bannerExtension": "svg",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ]
+}

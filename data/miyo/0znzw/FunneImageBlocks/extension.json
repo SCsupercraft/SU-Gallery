@@ -1,0 +1,25 @@
+{
+  "name": "Image Blocks",
+  "description": "They are blocks, but are they?",
+  "license": "MIT AND LGPL-3.0",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    },
+    {
+      "name": "CST1229",
+      "link": "https://scratch.mit.edu/users/CST1229/"
+    }
+  ],
+  "badges": [
+    {
+      "name": "Experimental",
+      "tooltip": "This extension is experimental, use with caution."
+    },
+    {
+      "name": "Internet",
+      "tooltip": "This extension requires access to the internet."
+    }
+  ]
+}

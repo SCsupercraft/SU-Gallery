@@ -1,0 +1,12 @@
+{
+  "name": "Right Click Menu",
+  "description": "Disable and enable the right click menu.",
+  "license": "MIT AND LGPL-3.0",
+  "bannerExtension": "svg",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ]
+}

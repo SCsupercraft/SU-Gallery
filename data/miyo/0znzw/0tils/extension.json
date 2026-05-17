@@ -1,0 +1,12 @@
+{
+  "name": "0tils",
+  "description": "My first ever extension.",
+  "license": "MIT",
+  "bannerExtension": "png",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ]
+}

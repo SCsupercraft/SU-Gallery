@@ -1,0 +1,16 @@
+{
+  "name": "Extension Exposer",
+  "description": "Run functions from other extensions.",
+  "license": "MIT AND LGPL-3.0",
+  "authors": [
+    {
+      "name": "TheShovel",
+      "link": "https://github.com/TheShovel"
+    },
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ],
+  "badges": ["Advanced"]
+}

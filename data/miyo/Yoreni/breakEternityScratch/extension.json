@@ -1,0 +1,16 @@
+{
+  "name": "Breaking Eternity",
+  "description": "Allows the break_eternity.js libary which is made by Patashu to be used in scratch",
+  "license": "LGPL-3.0",
+  "bannerExtension": "svg",
+  "authors": [
+    {
+      "name": "Yoreni",
+      "link": "https://github.com/Yoreni/"
+    },
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ]
+}

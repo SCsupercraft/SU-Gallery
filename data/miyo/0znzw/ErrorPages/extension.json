@@ -1,0 +1,18 @@
+{
+  "name": "Fake Crashes",
+  "description": "Create and customize custom GUI crashes (and crash the vm :o).",
+  "license": "MIT AND LGPL-3.0",
+  "bannerExtension": "svg",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ],
+  "badges": [
+    {
+      "name": "Experimental",
+      "tooltip": "This extension is experimental, use with caution."
+    }
+  ]
+}

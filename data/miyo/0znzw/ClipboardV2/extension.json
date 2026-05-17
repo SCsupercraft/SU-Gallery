@@ -1,0 +1,11 @@
+{
+  "name": "Clipboard V2",
+  "description": "Read and write from the system clipboard. (But improved!)",
+  "license": "MIT AND LGPL-3.0",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ]
+}

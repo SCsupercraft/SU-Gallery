@@ -1,0 +1,12 @@
+{
+  "name": "Try Catch V2",
+  "description": "Catch and throw REAL JavaScript errors.",
+  "license": "MIT AND LGPL-3.0",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    }
+  ],
+  "badges": ["Advanced"]
+}

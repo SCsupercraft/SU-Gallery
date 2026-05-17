@@ -1,0 +1,20 @@
+{
+  "name": "Script Management",
+  "description": "Manage scripts and threads, allowing for better control of your project.",
+  "license": "MIT",
+  "bannerExtension": "svg",
+  "authors": [
+    {
+      "name": "0znzw",
+      "link": "https://scratch.mit.edu/users/0znzw/"
+    },
+    {
+      "name": "CST1229",
+      "link": "https://scratch.mit.edu/users/CST1229/"
+    },
+    {
+      "name": "FurryR",
+      "link": "https://github.com/FurryR/"
+    }
+  ]
+}
