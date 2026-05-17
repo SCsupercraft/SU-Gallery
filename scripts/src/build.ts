@@ -353,6 +353,20 @@ const tasks = new Listr<BuildContext>(
                         }
                       }
 
+                      for (const badge of ext.badges) {
+                        const alias = config.alias.badges.find(
+                          (alias) =>
+                            alias.name == badge.name ||
+                            alias.otherNames.includes(badge.name.toLowerCase()),
+                        );
+
+                        if (alias !== undefined) {
+                          badge.name = alias.name;
+                          badge.tooltip ??= alias.tooltip;
+                          badge.link ??= alias.link;
+                        }
+                      }
+
                       extensions.push(ext);
                       _count++;
 

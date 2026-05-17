@@ -34,6 +34,41 @@ export const config: SiteConfig = {
     },
   },
   alias: {
+    badges: [
+      {
+        name: 'Experimental',
+        tooltip: 'This extension is experimental, use with caution.',
+        otherNames: ['experiment'],
+      },
+      {
+        name: 'Hardware',
+        tooltip: 'This extension requires special hardware.',
+        otherNames: [],
+      },
+      {
+        name: 'Internet',
+        tooltip: 'This extension requires access to the internet.',
+        otherNames: [],
+      },
+      {
+        name: 'WIP',
+        tooltip:
+          'This extension is a work in progress! You may encounter bugs.',
+        otherNames: ['unfinished', 'work in progress'],
+      },
+      {
+        name: 'Hidden',
+        tooltip:
+          'This extension was hidden from the original gallery. Use with caution!',
+        otherNames: [],
+      },
+      {
+        name: 'Joke',
+        tooltip:
+          "This extension was made as a joke, please don't take it seriously.",
+        otherNames: [],
+      },
+    ],
     authors: [
       {
         name: 'LilyMakesThings',
