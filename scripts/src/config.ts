@@ -13,6 +13,13 @@ export type Feature = {
   extension: string;
 };
 
+export type BadgeAlias = {
+  name: string;
+  tooltip?: string;
+  link?: string;
+  otherNames: string[];
+};
+
 export type AuthorAlias = {
   name: string;
   link: string;
@@ -26,6 +33,7 @@ export type SiteConfig = {
   featured: [Feature, Feature, Feature, Feature];
   mods: Record<string, Mod>;
   alias: {
+    badges: BadgeAlias[];
     authors: AuthorAlias[];
   };
 };

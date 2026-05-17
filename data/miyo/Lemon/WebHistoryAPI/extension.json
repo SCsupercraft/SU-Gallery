@@ -8,10 +8,5 @@
       "link": "https://scratch.mit.edu/users/BludIsAnLemon/"
     }
   ],
-  "badges": [
-    {
-      "name": "Internet",
-      "tooltip": "This extension requires access to the internet."
-    }
-  ]
+  "badges": ["Internet"]
 }

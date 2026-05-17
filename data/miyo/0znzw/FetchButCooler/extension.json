@@ -8,11 +8,5 @@
       "link": "https://scratch.mit.edu/users/0znzw/"
     }
   ],
-  "badges": [
-    "Advanced",
-    {
-      "name": "Internet",
-      "tooltip": "This extension requires access to the internet."
-    }
-  ]
+  "badges": ["Advanced", "Internet"]
 }

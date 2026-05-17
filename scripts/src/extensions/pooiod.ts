@@ -98,13 +98,10 @@ class PooiodExtensionGallerySource extends GalleryExtensionSource {
       if (meta.hidden)
         badges.push({
           name: 'Hidden',
-          tooltip:
-            'This extension was hidden from the original gallery. Use with caution!',
         });
       if (meta.tags.includes('unfinished'))
         badges.push({
           name: 'Unfinished',
-          tooltip: 'This extension is unfinished. Use with caution!',
         });
       if (meta.iconText || meta.subtext) {
         let text = '';

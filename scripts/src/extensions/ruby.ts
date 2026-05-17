@@ -81,8 +81,6 @@ class RubyExtensionGallerySource extends GalleryExtensionSource {
           ? [
               {
                 name: 'Joke',
-                tooltip:
-                  "This extension was made as a joke, please don't take it seriously",
               },
             ]
           : [],

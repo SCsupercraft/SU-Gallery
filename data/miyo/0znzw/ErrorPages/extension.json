@@ -9,10 +9,5 @@
       "link": "https://scratch.mit.edu/users/0znzw/"
     }
   ],
-  "badges": [
-    {
-      "name": "Experimental",
-      "tooltip": "This extension is experimental, use with caution."
-    }
-  ]
+  "badges": ["Experimental"]
 }

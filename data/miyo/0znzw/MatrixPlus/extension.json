@@ -9,10 +9,5 @@
       "link": "https://scratch.mit.edu/users/0znzw/"
     }
   ],
-  "badges": [
-    {
-      "name": "Hardware",
-      "tooltip": "This extension requires special hardware."
-    }
-  ]
+  "badges": ["Hardware"]
 }
