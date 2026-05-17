@@ -84,7 +84,16 @@ export default function App() {
           </a>{' '}
           license.
           <br />
-          Images & individual extensions may have separate licenses.
+          Images & individual extensions may have separate licenses. If you have
+          any issues or enquiries, click{' '}
+          <a
+            href="https://github.com/SCsupercraft/SU-Gallery/issues"
+            target="_blank"
+            rel="noreferrer noopener nofollow"
+          >
+            here
+          </a>
+          .
         </p>
       </footer>
     </div>
