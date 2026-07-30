@@ -1,7 +1,6 @@
 import * as _fs from 'node:fs/promises';
 import * as _fsSync from 'node:fs';
 import path from 'node:path';
-import type Stream from 'node:stream';
 import type { Abortable } from 'node:events';
 
 export const fs = {
@@ -36,8 +35,7 @@ export const fs = {
       | string
       | NodeJS.ArrayBufferView
       | Iterable<string | NodeJS.ArrayBufferView>
-      | AsyncIterable<string | NodeJS.ArrayBufferView>
-      | Stream,
+      | AsyncIterable<string | NodeJS.ArrayBufferView>,
     options?:
       | (_fsSync.ObjectEncodingOptions & {
           mode?: _fsSync.Mode | undefined;
