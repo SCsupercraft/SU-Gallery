@@ -37,9 +37,6 @@ const gallery: GalleryConfig = {
 
       // Ruby gallery.
       'RubyDevs/turboweather',
-
-      // Miyo's gallery
-      'Ashime/MoreFields',
     ]),
     supports(['pm']),
     maySupport(['em']),
