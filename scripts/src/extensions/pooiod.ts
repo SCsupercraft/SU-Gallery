@@ -16,12 +16,16 @@ const ExtensionsSchema = z.array(
     subtext: z.string(),
     icon: z.string(),
     iconText: z.string(),
-    buttons: z.array(
-      z.object({ text: z.string(), color: z.string(), link: z.string() }),
+    builds: z.record(
+      z.string(),
+      z.object({
+        direct: z.string(),
+      }),
     ),
     tags: z.array(z.string()),
-    type: z.array(z.string()),
     hidden: z.boolean(),
+    unsandboxed: z.boolean(),
+    unfinished: z.boolean().default(false),
   }),
 );
 
@@ -67,25 +71,24 @@ class PooiodExtensionGallerySource extends GalleryExtensionSource {
 
     reporter.setMaxProgress(extensions.length);
     for (const meta of extensions) {
+      const versions: Version[] = [];
       let mainVersion;
-      const versions: Version[] = meta.buttons
-        .filter((button) => button.link.startsWith('/view/#/[id]/'))
-        .map((button) => {
-          const filename = button.link.replace('/view/#/[id]/', '');
-          return {
-            name: button.text.replace('View ', ''),
-            location: `${this.info.viewLocation || this.info.sourceLocation}ext/${meta.id}/${filename}`,
-          };
-        });
-      if (
-        meta.buttons.find((button) => button.link === '/view/#/[id]') !=
-        undefined
-      ) {
+
+      for (const key in meta.builds) {
+        if (!Object.hasOwn(meta.builds, key)) continue;
+
+        const element = meta.builds[key]!;
+        let url = element.direct;
+
+        if (url.startsWith('/'))
+          url = `${this.info.viewLocation || this.info.sourceLocation}${url.substring(1)}`;
+
         versions.push({
-          name: 'Main',
-          location: `${this.info.viewLocation || this.info.sourceLocation}ext/${meta.id}/main.js`,
+          name: key,
+          location: url.replaceAll('[build]', key).replaceAll('[id]', meta.id),
         });
-        mainVersion = 'Main';
+
+        if (key === 'main') mainVersion = key;
       }
       if (mainVersion === undefined) mainVersion = versions[0]!.name;
 
@@ -99,7 +102,7 @@ class PooiodExtensionGallerySource extends GalleryExtensionSource {
         badges.push({
           name: 'Hidden',
         });
-      if (meta.tags.includes('unfinished'))
+      if (meta.unfinished)
         badges.push({
           name: 'Unfinished',
         });
